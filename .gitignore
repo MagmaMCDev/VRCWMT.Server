@@ -10,7 +10,7 @@
 *.userosscache
 *.sln.docstates
 # Server Files
-VRCW-Worlds.db
+*.db
 VRCWorldImages/
 
 # User-specific files (MonoDevelop/Xamarin Studio)
