@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <StartupObject>ServerBackend.Server</StartupObject>
+    <NoWarn>1701;1702;0008;0008</NoWarn>
+    <Platforms>AnyCPU;x64</Platforms>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MagmaMc.JEF" Version="5.0.1" />
+    <PackageReference Include="MagmaMc.MagmaSimpleConfig" Version="2.1.1" />
+    <PackageReference Include="MagmaMc.UAS" Version="0.2.1" />
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.20.1" />
+    <PackageReference Include="Nanoid" Version="3.0.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Pastel" Version="4.2.0" />
+    <PackageReference Include="Spectre.Console" Version="0.48.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="MagmaMc.SharedLibrary">
+      <HintPath>..\..\MagmaMc.SharedLibrary\bin\Debug\netstandard2.1\MagmaMc.SharedLibrary.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>
