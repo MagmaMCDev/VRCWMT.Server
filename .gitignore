@@ -9,6 +9,9 @@
 *.user
 *.userosscache
 *.sln.docstates
+# Server Files
+VRCW-Worlds.db
+VRCWorldImages/
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
