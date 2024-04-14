@@ -7,7 +7,6 @@ public class Startup
     {
         // Add controllers services
         services.AddControllers();
-
         // Other services configuration...
     }
 

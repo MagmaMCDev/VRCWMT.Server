@@ -8,12 +8,52 @@
     <StartupObject>ServerBackend.Server</StartupObject>
     <NoWarn>1701;1702;0008;0008</NoWarn>
     <Platforms>AnyCPU;x64</Platforms>
+    <UserSecretsId>568ea3f4-8bdb-48f0-ac88-26a4e9bc06cd</UserSecretsId>
   </PropertyGroup>
+  
+  <PropertyGroup>
+    <FileVersion>0.2.0</FileVersion>
+    <AssemblyVersion>$(FileVersion).0</AssemblyVersion>
+    <Version>$(FileVersion)</Version>
+    <AssemblyName>VRCWMT</AssemblyName>
+    <ApplicationIcon>VRCWMT.ico</ApplicationIcon>
+    <PublishAot>False</PublishAot>
+    <Title>VRChat World Moderation Tool</Title>
+    <Authors>MagmaMC</Authors>
+    <Product>$(Title)</Product>
+    <Description>$(Title)</Description>
+    <Copyright>MIT</Copyright>
+    <PackageProjectUrl>$(RepositoryUrl)</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/MagmaMCDev/VRCWMT.Server</RepositoryUrl>
+    <PublishTrimmed>False</PublishTrimmed>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <Content Include="VRCWMT.ico" />
+  </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="AspNet.Security.OAuth.GitHub" Version="8.0.0" />
     <PackageReference Include="MagmaMc.JEF" Version="5.0.1" />
     <PackageReference Include="MagmaMc.MagmaSimpleConfig" Version="2.1.1" />
     <PackageReference Include="MagmaMc.UAS" Version="0.2.1" />
+    <PackageReference Include="Microsoft.Owin.Security.OAuth" Version="4.2.2" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.20.1" />
     <PackageReference Include="Nanoid" Version="3.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
@@ -23,7 +63,7 @@
 
   <ItemGroup>
     <Reference Include="MagmaMc.SharedLibrary">
-      <HintPath>..\..\MagmaMc.SharedLibrary\bin\Debug\netstandard2.1\MagmaMc.SharedLibrary.dll</HintPath>
+      <HintPath>MagmaMc.SharedLibrary.dll</HintPath>
     </Reference>
   </ItemGroup>
 

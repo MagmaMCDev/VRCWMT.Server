@@ -7,22 +7,9 @@ namespace ServerBackend;
 [ApiController]
 public class APIV1 : ControllerBase
 {
-
-    [HttpGet("Login")]
-    [HttpPost("Login")]
-    public IActionResult Login()
-    {
-        string? Token = Request.Query["Token"].ToString();
-        if (string.IsNullOrWhiteSpace(Token))
-            return BadRequest("Token Required");
-        
-        if (!UserData.ValidToken(Token))
-            return BadRequest(Token);
-        Response.Cookies.Append("AuthToken", Token, new CookieOptions() { Path = "/", IsEssential = true, MaxAge = TimeSpan.FromDays(7) });
-        string redirectScript = @"<script>window.location.href='https://vrc.magmamc.dev/';</script>";
-
-        return Content(redirectScript, "text/html");
-    }
+    public const string APIRoute = "https://vrc.magmamc.dev/API/V1";
+    public const string ClientID = "42c4f36cde15ada6d5db";
+    public const string ClientSecret = "78b51f69bb394ef2c1b9c0febde4fed906855648";
 
     [HttpGet("Logout")]
     [HttpPost("Logout")]
@@ -34,6 +21,35 @@ public class APIV1 : ControllerBase
         return Content(redirectScript, "text/html");
     }
 
+    [HttpGet("Login")]
+    [HttpGet("Github/Login")]
+    public IActionResult GithubLogin()
+    {
+        var githubAuthUrl = $"https://github.com/login/oauth/authorize?client_id={ClientID}&scope=repo,read:user&redirect_uri={APIRoute}/Github/OAuth/";
+
+        return Redirect(githubAuthUrl);
+    }
+
+    [HttpGet("Github/OAuth")]
+    [HttpPost("Github/OAuth")]
+    public async Task<IActionResult> GithubOAuthLogin()
+    {
+        string? authCode = Request.Query["code"];
+
+        if (string.IsNullOrEmpty(authCode))
+            return Redirect("{APIRoute}/Github/Login");
+
+        using HttpClient httpClient = new HttpClient();
+        httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
+        HttpResponseMessage message = await httpClient.PostAsync($"https://github.com/login/oauth/access_token?client_id={ClientID}&client_secret={ClientSecret}&code={authCode}", null);
+        GithubOAuth? OAuth = await message.Content.ReadFromJsonAsync<GithubOAuth>();
+        Response.Cookies.Append("AuthToken", OAuth.access_token);
+        string redirectScript = @"<script>window.location.href='https://vrc.magmamc.dev/';</script>";
+
+        return Content(redirectScript, "text/html");
+    }
+
+
     [HttpPost("Worlds")]
     public IActionResult AddWorld(IFormFile file)
     {
@@ -43,8 +59,10 @@ public class APIV1 : ControllerBase
 
             if (string.IsNullOrWhiteSpace(Token))
                 return Unauthorized("Unauthorized");
-            if (!UserData.ValidToken(Token))
-                return Unauthorized("Invalid Token");
+            GithubUser? User = GithubAuth.GetUser(Token);
+            Console.WriteLine(Token);
+            if (User == null)
+                return Unauthorized("Unauthorized");
 
             string WorldName = Request.Form["WorldName"].ToString();
             string WorldDesc = Request.Form["WorldDescription"].ToString();
@@ -56,11 +74,9 @@ public class APIV1 : ControllerBase
                 return BadRequest("WorldDescription must contain only ASCII characters.");
 
 
-            UserData userData = UserData.GetUserData(Token);
-
             string ID = Database.NewID;
             if (Server.Database.Worlds.ContainsKey(ID))
-                return Problem();
+                return StatusCode(501, "Please Try Again");
 
 
             if (file != null)
@@ -89,9 +105,9 @@ public class APIV1 : ControllerBase
             {
                 WorldName = WorldName,
                 WorldDescription = WorldDesc,
-                WorldCreator = userData.Username
+                WorldCreator = User.login
             };
-            Server.Database.Worlds.Add(ID, World);
+            Server.Database.Worlds.TryAdd(ID, World);
         }
         catch
         {
@@ -214,23 +230,21 @@ public class APIV1 : ControllerBase
 
             if (string.IsNullOrWhiteSpace(Token))
                 return Unauthorized("Unauthorized");
-            if (!UserData.ValidToken(Token))
+            GithubUser? User = GithubAuth.GetUser(Token);
+            if (User == null)
                 return Unauthorized("Unauthorized");
 
             string HeaderName = Request.Form["HeaderName"].ToString();
             string Description = Request.Form["Description"].ToString();
 
-
-
             VRCW? World = null;
             Server.Database.Worlds.TryGetValue(WorldID, out World);
             if (World == null)
                 return NotFound("World Not Found");
-            UserData userData = UserData.GetUserData(Token);
             World.Posts.Add(new Post()
             {
                 HeaderName = HeaderName,
-                OriginalPoster = userData.Username,
+                OriginalPoster = User.login,
                 Description = Description
             });
             return Ok(World);
@@ -253,7 +267,8 @@ public class APIV1 : ControllerBase
 
             if (string.IsNullOrWhiteSpace(Token))
                 return Unauthorized("Unauthorized");
-            if (!UserData.ValidToken(Token))
+            GithubUser? User = GithubAuth.GetUser(Token);
+            if (User == null)
                 return Unauthorized("Unauthorized");
 
             string Text = Request.Form["Text"].ToString();
@@ -274,9 +289,8 @@ public class APIV1 : ControllerBase
 
             Post = World.Posts[PostNumber];
 
-            UserData userData = UserData.GetUserData(Token);
             PostReply postReply = new PostReply();
-            postReply.Username = userData.Username;
+            postReply.Username = User.login;
             postReply.Text = Text;
 
             Post.Replies.Add(postReply);
@@ -298,18 +312,19 @@ public class APIV1 : ControllerBase
 
         if (string.IsNullOrWhiteSpace(Token))
             return Unauthorized("Unauthorized");
-        if (!UserData.ValidToken(Token))
+        GithubUser? User = GithubAuth.GetUser(Token);
+        if (User == null)
             return Unauthorized("Unauthorized");
 
-
-        VRCW? World = null;
+        VRCW? World;
         Server.Database.Worlds.TryGetValue(WorldID, out World);
-        UserData userData = UserData.GetUserData(Token);
-        if (!World.SiteAdmins.Select(u => u.ToLower()).Contains(userData.Username.ToLower()))
+        if (World == null)
+            return NotFound("World Not Found");
+
+        if (User.IsMapAdmin(World))
             return Unauthorized("Unauthorized");
 
-        string User = Request.Form["User"].ToString();
-        World.BannedPlayers.Add(User);
+        World.BannedPlayers.Add(Request.Form["User"].ToString());
         Server.Database.Worlds[WorldID] = World;
         return Ok("Success");
     }
@@ -321,20 +336,19 @@ public class APIV1 : ControllerBase
 
         if (string.IsNullOrWhiteSpace(Token))
             return Unauthorized("Unauthorized");
-        if (!UserData.ValidToken(Token))
+        GithubUser? User = GithubAuth.GetUser(Token);
+        if (User == null)
             return Unauthorized("Unauthorized");
 
-
-        VRCW? World = null;
+        VRCW? World;
         Server.Database.Worlds.TryGetValue(WorldID, out World);
         if (World == null)
             return NotFound("World Not Found");
-        UserData userData = UserData.GetUserData(Token);
-        if (!World.SiteAdmins.Select(u => u.ToLower()).Contains(userData.Username.ToLower()))
+
+        if (User.IsMapAdmin(World))
             return Unauthorized("Unauthorized");
 
-        string User = Request.Form["User"].ToString();
-        World.BannedPlayers.Remove(User);
+        World.BannedPlayers.Remove(Request.Form["User"].ToString());
         Server.Database.Worlds[WorldID] = World;
         return Ok("Success");
     }
@@ -346,24 +360,22 @@ public class APIV1 : ControllerBase
 
         if (string.IsNullOrWhiteSpace(Token))
             return Unauthorized("Unauthorized");
-        if (!UserData.ValidToken(Token))
+        GithubUser? User = GithubAuth.GetUser(Token);
+        if (User == null)
             return Unauthorized("Unauthorized");
 
-
-        VRCW? World = null;
+        VRCW? World;
         Server.Database.Worlds.TryGetValue(WorldID, out World);
         UserData userData = UserData.GetUserData(Token);
         if (World == null)
             return NotFound("World Not Found");
-        if (Server.Database.SiteOwner.ToLower() == userData.Username.ToLower() || World.WorldCreator.ToLower() == userData.Username.ToLower())
-        {
+        if (!User.IsMapMaster(WorldID))
+            return Unauthorized("Unauthorized");
 
-            string User = Request.Form["User"].ToString();
-            World.SiteAdmins.Add(User);
-            Server.Database.Worlds[WorldID] = World;
-            return Ok("Success");
-        }
-        return Unauthorized("Unauthorized");
+        World.SiteAdmins.Add(Request.Form["User"].ToString());
+        Server.Database.Worlds[WorldID] = World;
+        return Ok("Success");
+
     }
 
 
@@ -387,5 +399,7 @@ public class APIV1 : ControllerBase
         }
 
     }
+
     public static bool IsAscii(string value) => Regex.IsMatch(value, @"^[\x00-\x7F\s]+$");
 }
+

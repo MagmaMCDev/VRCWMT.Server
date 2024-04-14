@@ -4,19 +4,21 @@ using System.Text;
 using Logger = MagmaMc.SharedLibrary.Logger;
 using NanoidDotNet;
 using MagmaMc.SharedLibrary;
+using System.Collections.Concurrent;
 namespace ServerBackend;
 
-public class Database
+public class Database: IDisposable
 {
     public const string FileName = "VRCW-Worlds.db";
     public const string SecurityKey = "VRCWMT";
     public static string NewID => "WRD_"+Nanoid.Generate("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", 32);
-    public string SiteOwner { get; set; } = "";
-    public Dictionary<string, VRCW> Worlds { get; set; } = [];
-
+    public string SiteOwner => Server.CFG.SiteOwner;
+    public ConcurrentDictionary<string, VRCW> Worlds { get; set; } = [];
 
     private static readonly Logger Debug = new(LoggingLevel.Debug);
     private static bool FileWriteTimeout = false;
+    private bool disposedValue;
+
     public static void SaveContents(Database DB)
     {
         if (FileWriteTimeout)
@@ -58,4 +60,18 @@ public class Database
         
     }
 
+    public virtual void Dispose()
+    {
+        if (!disposedValue)
+        {
+            Worlds.Clear();
+            disposedValue = true;
+        }
+    }
+
+    void IDisposable.Dispose()
+    {
+        Dispose();
+        GC.SuppressFinalize(this);
+    }
 }

@@ -12,7 +12,7 @@
 # Server Files
 *.db
 VRCWorldImages/
-
+appsetting*.json
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
