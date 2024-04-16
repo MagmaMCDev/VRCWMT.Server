@@ -11,6 +11,7 @@
 *.sln.docstates
 # Server Files
 *.db
+*.MSC
 VRCWorldImages/
 appsetting*.json
 # User-specific files (MonoDevelop/Xamarin Studio)
@@ -364,3 +365,4 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/Config.MSC
