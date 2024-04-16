@@ -1,6 +1,6 @@
 ﻿using MagmaMc.MagmaSimpleConfig;
 
-namespace ServerBackend.SRC;
+namespace ServerBackend;
 
 public class ServerConfig: SimpleConfig
 {
@@ -10,13 +10,14 @@ public class ServerConfig: SimpleConfig
     public string PORT = "";
     public string SiteOwner = "";
 
-    public const string VERSION = "0.2.0";
+    public string VRC_auth = "";
+    public string VRC_twoFactorAuth = "";
+
+    public const string VERSION = "0.3.0";
 
     public ServerConfig(): base(Filename)
     {
         if (!File.Exists(Filename))
-        {
             File.WriteAllBytes(Filename, Array.Empty<byte>());
-        }
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace ServerBackend;
+﻿namespace ServerBackend.Models;
 
 public class SiteUser
 {

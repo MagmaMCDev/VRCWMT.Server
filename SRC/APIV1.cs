@@ -1,6 +1,7 @@
 ﻿using System.Text.RegularExpressions;
 using MagmaMc.UAS;
 using Microsoft.AspNetCore.Mvc;
+using ServerBackend.Models;
 
 namespace ServerBackend;
 [Route("api/v1/")]
@@ -11,6 +12,7 @@ public class APIV1 : ControllerBase
     public const string ClientID = "42c4f36cde15ada6d5db";
     public const string ClientSecret = "78b51f69bb394ef2c1b9c0febde4fed906855648";
 
+    #region Github
     [HttpGet("Logout")]
     [HttpPost("Logout")]
     public IActionResult Logout()
@@ -48,7 +50,9 @@ public class APIV1 : ControllerBase
 
         return Content(redirectScript, "text/html");
     }
+    #endregion
 
+    #region Worlds
 
     [HttpPost("Worlds")]
     public IActionResult AddWorld(IFormFile file)
@@ -170,7 +174,9 @@ public class APIV1 : ControllerBase
         }
 
     }
+    #endregion
 
+    #region Posts
     [HttpGet("Worlds/{ID}/Posts")]
     public IActionResult GetPosts(string WorldID)
     {
@@ -190,7 +196,6 @@ public class APIV1 : ControllerBase
             return Problem("Internal Error");
         }
     }
-
 
     [HttpGet("Worlds/{WorldID}/Posts/{PostID}")]
     public IActionResult GetPost(string WorldID, string PostID)
@@ -305,6 +310,28 @@ public class APIV1 : ControllerBase
 
     }
 
+    [HttpGet("Worlds/{WorldID}/{Username}")]
+    public IActionResult GetUserPost(string WorldID, string Username)
+    {
+        try
+        {
+            VRCW World = Server.Database.Worlds[WorldID];
+            SiteUser User = new SiteUser();
+            User.Username = Username;
+            User.SiteOwner = User.Username.ToLower() == Server.Database.SiteOwner.ToLower();
+            User.WorldCreater = User.Username.ToLower() == World.WorldCreator.ToLower();
+            User.SiteAdmin = World.SiteAdmins.Select(u => u.ToLower()).Contains(Username.ToLower());
+            return Ok(User);
+
+        }
+        catch
+        {
+            return NotFound("Not Found");
+        }
+    }
+    #endregion
+
+    #region Administration
     [HttpGet("Worlds/{WorldID}/BanUser/Add")]
     public IActionResult BanUser(string WorldID)
     {
@@ -324,7 +351,11 @@ public class APIV1 : ControllerBase
         if (User.IsMapAdmin(World))
             return Unauthorized("Unauthorized");
 
-        World.BannedPlayers.Add(Request.Form["User"].ToString());
+        PlayerItem playerItem = new();
+        playerItem.PlayerID = Request.Form["UserID"].ToString().Trim().ToLower();
+        playerItem.AddedBy = User.login;
+        if (!World.BannedPlayers.TryAdd(playerItem.PlayerID, playerItem))
+            return BadRequest("Failed");
         Server.Database.Worlds[WorldID] = World;
         return Ok("Success");
     }
@@ -348,7 +379,11 @@ public class APIV1 : ControllerBase
         if (User.IsMapAdmin(World))
             return Unauthorized("Unauthorized");
 
-        World.BannedPlayers.Remove(Request.Form["User"].ToString());
+        PlayerItem playerItem = new();
+        playerItem.PlayerID = Request.Form["UserID"].ToString().Trim().ToLower();
+        playerItem.AddedBy = User.login;
+        if (!World.BannedPlayers.TryRemove(playerItem.PlayerID, out _))
+            return BadRequest("Failed");
         Server.Database.Worlds[WorldID] = World;
         return Ok("Success");
     }
@@ -366,7 +401,6 @@ public class APIV1 : ControllerBase
 
         VRCW? World;
         Server.Database.Worlds.TryGetValue(WorldID, out World);
-        UserData userData = UserData.GetUserData(Token);
         if (World == null)
             return NotFound("World Not Found");
         if (!User.IsMapMaster(WorldID))
@@ -377,28 +411,41 @@ public class APIV1 : ControllerBase
         return Ok("Success");
 
     }
+    #endregion
 
-
-    [HttpGet("Worlds/{WorldID}/{Username}")]
-    public IActionResult GetUserPost(string WorldID, string Username)
+    #region VRChat
+    [HttpGet("Users/{UserID}")]
+    [HttpGet("VRChat/Users/{UserID}")]
+    public IActionResult GetVRChatUser(string UserID)
     {
-        try
-        {
-            VRCW World = Server.Database.Worlds[WorldID];
-            SiteUser User = new SiteUser();
-            User.Username = Username;
-            User.SiteOwner = User.Username.ToLower() == Server.Database.SiteOwner.ToLower();
-            User.WorldCreater = User.Username.ToLower() == World.WorldCreator.ToLower();
-            User.SiteAdmin = World.SiteAdmins.Select(u => u.ToLower()).Contains(Username.ToLower());
-            return Ok(User);
+        string? Token = Request.Cookies["AuthToken"];
 
-        }
-        catch
-        {
-            return NotFound("Not Found");
-        }
-
+        if (string.IsNullOrWhiteSpace(Token))
+            return Unauthorized("Unauthorized");
+        GithubUser? User = GithubAuth.GetUser(Token);
+        if (User == null)
+            return Unauthorized("Unauthorized");
+        VRChatUser VRCUser = VRChat.GetUser(UserID);
+        return Ok(VRCUser);
     }
+
+    [HttpGet("Users/{UserID}/Validate")]
+    [HttpGet("VRChat/Users/{UserID}/Validate")]
+    public IActionResult ValidateVRChatUser(string UserID)
+    {
+        string? Token = Request.Cookies["AuthToken"];
+
+        if (string.IsNullOrWhiteSpace(Token))
+            return Unauthorized("Unauthorized");
+        GithubUser? User = GithubAuth.GetUser(Token);
+        if (User == null)
+            return Unauthorized("Unauthorized");
+        if (VRChat.GetUser(UserID).displayName != "[NOTLOADED]")
+            return Ok(true);
+        else
+            return NotFound(false);
+    }
+    #endregion
 
     public static bool IsAscii(string value) => Regex.IsMatch(value, @"^[\x00-\x7F\s]+$");
 }

@@ -3,21 +3,20 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
+using ServerBackend.Models;
 namespace ServerBackend;
 
 public class Github
 {
     private static readonly ConcurrentDictionary<string, GithubUser> _userCache = new();
-    public static string User_Agent = "VRCWMT - " + (Environment.Is64BitOperatingSystem ? "64x" : "32x") + $" - {Environment.OSVersion.Platform}{Environment.OSVersion.VersionString}";
+    public static void ClearCache() => _userCache.Clear();
 
     public static async Task<GithubUser> GetUserAsync(string token)
     {
         if (_userCache.TryGetValue(token, out var cachedUser))
-        {
             return cachedUser;
-        }
 
-        var user = await FetchUserAsync(token);
+        GithubUser user = await FetchUserAsync(token);
         _userCache[token] = user;
         return user;
     }
@@ -26,7 +25,7 @@ public class Github
     {
         using var httpClient = new HttpClient();
         httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
-        httpClient.DefaultRequestHeaders.Add("User-Agent", User_Agent);
+        httpClient.DefaultRequestHeaders.Add("User-Agent", Server.User_Agent);
 
         var response = await httpClient.GetAsync("https://api.github.com/user");
         response.EnsureSuccessStatusCode();
@@ -43,7 +42,7 @@ public class GithubRepo
     {
         using var httpClient = new HttpClient();
         httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
-        httpClient.DefaultRequestHeaders.Add("User-Agent", Github.User_Agent);
+        httpClient.DefaultRequestHeaders.Add("User-Agent", Server.User_Agent);
 
         var response = await httpClient.GetAsync($"https://api.github.com/repos/{repoName}/contributors");
         response.EnsureSuccessStatusCode();
@@ -56,7 +55,7 @@ public class GithubRepo
     {
         using var httpClient = new HttpClient();
         httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
-        httpClient.DefaultRequestHeaders.Add("User-Agent", Github.User_Agent);
+        httpClient.DefaultRequestHeaders.Add("User-Agent", Server.User_Agent);
 
         var result = new List<string>();
         foreach (var user in newUsers)

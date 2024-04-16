@@ -1,24 +1,35 @@
 using System.Diagnostics;
+using System.Net;
 using System.Runtime.Versioning;
+using System.Text;
+using System.Text.Json;
 using MagmaMc.SharedLibrary;
-using ServerBackend.SRC;
+using ServerBackend.Models;
 using Spectre.Console;
 
 namespace ServerBackend;
 public class Server
 {
 #pragma warning disable CS8618
-    private static IHost program;
+    private static IHost WebServer;
     private static Thread MainThread;
+    private static Thread DBThread;
+    private static Thread AuthThread;
 #pragma warning restore CS8618
     private static readonly Logger Debugger = new(LoggingLevel.Debug);
     public static Database Database = new();
     public static ServerConfig CFG = new();
-        
+    public static string User_Agent = "VRChat-World-Moderation-Tool.Server - " + Environment.OSVersion.Platform + $" - {Environment.OSVersion.VersionString.Replace(" ", "-")}";
+
     public static void Main(string[] args)
     {
         Commands.SetupConfig();
-        program = CreateHostBuilder().Build();
+
+        if (!VRChat.LoggedIn)
+            VRChat.SemiAutoLogin();
+        if (!VRChat.LoggedIn)
+            Commands.Login();
+        WebServer = CreateHostBuilder().Build();
         Run();
     }
     public static IHostBuilder CreateHostBuilder() =>
@@ -28,27 +39,60 @@ public class Server
                 webBuilder.UseStartup<Startup>();
                 webBuilder.UseUrls($"http://{CFG.IP}:{CFG.PORT}");
             });
-    public static void UpdateDataBase()
+    private static void UpdateDataBase()
     {
         while (MainThread.IsAlive)
         {
-            Thread.Sleep(30 * 1000);
+            for (int i = 0; i < 15 * (System.Diagnostics.Debugger.IsAttached ? 1 : 2); i++)
+            {
+                Thread.Sleep(2000);
+                if (MainThread == null)
+                    return;
+                if (!MainThread.IsAlive)
+                    return;
+            }
             Database.SaveContents(Database);
-            if (!System.Diagnostics.Debugger.IsAttached)
-                Thread.Sleep(30 * 1000);
         }
     }
+    private static void CheckAuth()
+    {
+        while (MainThread.IsAlive)
+        {
+            for (int i = 0; i < 15 * (System.Diagnostics.Debugger.IsAttached ? 1 : 2); i++)
+            {
+                Thread.Sleep(2000);
+                if (MainThread == null)
+                    return;
+                if (!MainThread.IsAlive)
+                    return;
+            }
+            if (!VRChat.LoggedIn)
+            {
+                AnsiConsole.MarkupLine("[red]VRChat Auth Invalid Attempting Auto Login");
+                do
+                {
+                    VRChat.SemiAutoLogin();
+                } while(!VRChat.LoggedIn);
+            }
+        }
+    }
+
+
+
     public static void Run()
     {
         if (File.Exists(Database.FileName))
             Database = Database.LoadContents() ?? Database;
         else
             Database.SaveContents(Database);
-        MainThread = new Thread(program.Run);
+        MainThread = new Thread(WebServer.Run);
         MainThread.Priority = ThreadPriority.AboveNormal;
         MainThread.Name = "Web Application Thread";
         MainThread.Start();
-        new Thread(UpdateDataBase).Start();
+        DBThread = new Thread(UpdateDataBase);
+        DBThread.Start();
+        AuthThread = new Thread(CheckAuth);
+        AuthThread.Start();
         Thread.Sleep(500);
         Commands.Stats();
 
@@ -120,27 +164,38 @@ public class Server
                 case "SAVEDATABASE" or "SAVEDB":
                     Commands.SaveDB();
                     break;
+                case "LOGIN":
+                    Commands.Login();
+                    break;
+                case "LOGOUT":
+                    AnsiConsole.Markup("[orangered1]> [/]");
+                    if (!AnsiConsole.Ask("[red]Are You Sure You Want To Logout (Restart Required!)[/]", false))
+                        break;
+                    CFG.VRC_auth = "";
+                    CFG.SetValue("VRCHAT_auth", "", "VRCWMT");
+                    CFG.VRC_twoFactorAuth = "";
+                    CFG.SetValue("VRCHAT_twoFactorAuth", "", "VRCWMT");
+                    Thread.Sleep(1000);
+                    Commands.Restart();
+                    break;
+                case "CHECKAUTH":
+                    if (!VRChat.CheckAuth())
+                        AnsiConsole.MarkupLine("[red]Not Logged In![/]");
+                    else
+                        AnsiConsole.MarkupLine("[lime]Logged In![/]");
+                    break;
+                case "CHECKACCOUNT" or "ACCOUNT":
+                    if (!VRChat.CheckAuth())
+                    {
+                        AnsiConsole.MarkupLine("[red]Not Logged In![/]");
+                        break;
+                    }
+
+                    VRChatUser User = JsonSerializer.Deserialize<VRChatUser>(VRChat.VRCHTTPClient.GetAsync("auth/user").GetHTTPString())!;
+                    AnsiConsole.MarkupLine($"Username: {User.displayName}");
+                    break;
                 case "RESTART":
-                    Commands.Exit();
-                    Thread.Sleep(250);
-                    Database.Dispose();
-                    AnsiConsole.MarkupLine("[red]Closed Database[/]");
-                    AnsiConsole.MarkupLine("[lime]Initializing New Database...[/]");
-                    Commands.SetupConfig();
-                    Database = new Database();
-                    Database = Database.LoadContents() ?? Database;
-                    Thread.Sleep(250);
-                    AnsiConsole.MarkupLine("[lime]Initialized New Database[/]");
-                    AnsiConsole.MarkupLine("[lime]Starting Server...[/]");
-                    Thread.Sleep(250);
-                    program = CreateHostBuilder().Build();
-                    MainThread = new Thread(program.Run);
-                    MainThread.Priority = ThreadPriority.AboveNormal;
-                    MainThread.Name = "Web Application Thread";
-                    MainThread.Start();
-                    AnsiConsole.MarkupLine("[lime]Started Server[/]");
-                    Thread.Sleep(500);
-                    Commands.Stats();
+                    Commands.Restart();
                     break;
                 case "HELP":
                     Commands.Help();
@@ -162,6 +217,14 @@ public class Server
             AnsiConsole.MarkupLine($@"[orangered1] - [/]" + $@"Creates A New Dummy VRC World In The Database");
             AnsiConsole.Markup($@"[orangered1]> [/][lime]DELETE DUMMYWORLDS[/]");
             AnsiConsole.MarkupLine($@"[orangered1] - [/]" + $@"Deletes All The Dummy Worlds From The Database");
+            AnsiConsole.Markup($@"[orangered1]> [/][lime]LOGIN[/]");
+            AnsiConsole.MarkupLine($@"[orangered1] - [/]" + $@"Login To The VRChat API");
+            AnsiConsole.Markup($@"[orangered1]> [/][lime]LOGOUT[/]");
+            AnsiConsole.MarkupLine($@"[orangered1] - [/]" + $@"Logout Of The VRChat API");
+            AnsiConsole.Markup($@"[orangered1]> [/][lime]CHECK AUTH[/]");
+            AnsiConsole.MarkupLine($@"[orangered1] - [/]" + $@"Checks If The Current AuthToken Is Valid");
+            AnsiConsole.Markup($@"[orangered1]> [/][lime]CHECK ACCOUNT[/]");
+            AnsiConsole.MarkupLine($@"[orangered1] - [/]" + $@"Displays The Currently Logged In VRChat User");
             AnsiConsole.Markup($@"[orangered1]> [/][lime]SET OWNER[/]");
             AnsiConsole.MarkupLine($@"[orangered1] - [/]" + $@"Set The Site Owner");
             AnsiConsole.Markup($@"[orangered1]> [/][lime]SET IP[/]");
@@ -185,6 +248,15 @@ public class Server
             AnsiConsole.MarkupLine($@"[orangered1] - [/]" + $@"Saves The Database And Exits");
         }
 
+        public static void Login()
+        {
+            do
+            {
+                VRChat.InteractiveLogin();
+            }
+            while (!VRChat.LoggedIn);
+        }
+
         public static void Stats()
         {
             Console.Clear();
@@ -199,17 +271,69 @@ public class Server
         }
         public static void Exit()
         {
+            Thread.Sleep(50);
             Console.Clear();
+            Thread.Sleep(150);
             AnsiConsole.MarkupLine("[red]Closing Server...[/]");
-            program.StopAsync().Wait();
-            program.Dispose();
-            Thread.Sleep(250);
+            WebServer.StopAsync().Wait();
+            WebServer.Dispose();
+            Thread.Sleep(150);
             AnsiConsole.MarkupLine("[red]Closed Server[/]");
+            Thread.Sleep(50);
             SaveDB();
+            Thread.Sleep(50);
+            AnsiConsole.MarkupLine("[red]Closing Threads...[/]");
+            DBThread.Join();
+            AuthThread.Join();
+            Thread.Sleep(150);
+            AnsiConsole.MarkupLine("[red]Closed Threads[/]");
+            Thread.Sleep(50);
             AnsiConsole.MarkupLine("[red]Closing Database...[/]");
             Thread.Sleep(250);
             Database.Dispose();
             AnsiConsole.MarkupLine("[red]Closed Database[/]");
+        }
+        public static void Restart()
+        {
+            Commands.Exit();
+            Thread.Sleep(250);
+            AnsiConsole.MarkupLine("[lime]Clearing Cache...[/]");
+            Github.ClearCache();
+            VRChat.ClearCache();
+            Thread.Sleep(250);
+            AnsiConsole.MarkupLine("[lime]Cleared Cache[/]");
+            Thread.Sleep(50);
+            AnsiConsole.MarkupLine("[lime]Renewing VRChat HTTPClient...[/]");
+            Thread.Sleep(50);
+            VRChat.RenewHTTPClient();
+            Thread.Sleep(250);
+            AnsiConsole.MarkupLine("[lime]Renewed VRChat HTTPClient[/]");
+            Thread.Sleep(50);
+            AnsiConsole.MarkupLine("[lime]Initializing New Database...[/]");
+            Commands.SetupConfig();
+            Database = new Database();
+            Database = Database.LoadContents() ?? Database;
+            Thread.Sleep(250);
+            AnsiConsole.MarkupLine("[lime]Initialized New Database[/]");
+            if (!VRChat.LoggedIn)
+                VRChat.InteractiveLogin();
+            Thread.Sleep(250);
+            AnsiConsole.MarkupLine("[lime]Starting Server...[/]");
+            Thread.Sleep(150);
+            WebServer = CreateHostBuilder().Build();
+            MainThread = new Thread(WebServer.Run);
+            MainThread.Priority = ThreadPriority.AboveNormal;
+            MainThread.Name = "Web Application Thread";
+            MainThread.Start();
+            AnsiConsole.MarkupLine("[lime]Initializing Threads...[/]");
+            DBThread = new Thread(UpdateDataBase);
+            DBThread.Start();
+            AuthThread = new Thread(CheckAuth);
+            AuthThread.Start();
+            Thread.Sleep(150);
+            AnsiConsole.MarkupLine("[lime]Started Server[/]");
+            Thread.Sleep(500);
+            Commands.Stats();
         }
         public static void SaveDB()
         {
@@ -235,10 +359,17 @@ public class Server
             CFG.IP = CFG.GetValue("IP", "VRCWMT", "0.0.0.0");
             CFG.PORT = CFG.GetValue("PORT", "VRCWMT", "5151");
             CFG.SiteOwner = CFG.GetValue("SiteOwner", "VRCWMT", "MagmaMC");
+            CFG.VRC_auth = CFG.GetValue("VRCHAT_auth", "VRCWMT", "");
+            CFG.VRC_twoFactorAuth = CFG.GetValue("VRCHAT_twoFactorAuth", "VRCWMT", "");
+            VRChat.Username = Encoding.UTF8.GetString(Convert.FromBase64String(CFG.GetValue("VRCHAT_name", "VRCWMT", "")));
+            VRChat.Password = Encoding.UTF8.GetString(Convert.FromBase64String(CFG.GetValue("VRCHAT_pass", "VRCWMT", "")));
             CFG.SetValue("IP", CFG.IP, "VRCWMT");
             CFG.SetValue("PORT", CFG.PORT, "VRCWMT");
             CFG.SetValue("SiteOwner", CFG.SiteOwner, "VRCWMT");
+            CFG.SetValue("VRCHAT_auth", CFG.VRC_auth, "VRCWMT");
+            CFG.SetValue("VRCHAT_twoFactorAuth", CFG.VRC_twoFactorAuth, "VRCWMT");
+            CFG.SetValue("VRCHAT_name", Convert.ToBase64String(Encoding.UTF8.GetBytes(VRChat.Username)), "VRCWMT");
+            CFG.SetValue("VRCHAT_pass", Convert.ToBase64String(Encoding.UTF8.GetBytes(VRChat.Password)), "VRCWMT");
         }
-
     }
 }
