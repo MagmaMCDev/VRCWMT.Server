@@ -7,3 +7,4 @@ using System.Diagnostics.CodeAnalysis;
 
 [assembly: SuppressMessage("Style", "IDE0007:Use implicit type")]
 [assembly: SuppressMessage("Style", "IDE0011:Add braces")]
+[assembly: SuppressMessage("Style", "IDE1006:Naming Styles")]

@@ -5,8 +5,8 @@ using Logger = MagmaMc.SharedLibrary.Logger;
 using NanoidDotNet;
 using MagmaMc.SharedLibrary;
 using System.Collections.Concurrent;
-using ServerBackend.Models;
-namespace ServerBackend;
+using VRCWMT.Models;
+namespace VRCWMT;
 
 public class Database: IDisposable
 {

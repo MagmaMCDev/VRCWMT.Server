@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Player Permissions</title>
+</head>
+<body>
+    <h2>Edit Player Permissions</h2>
+    <form id="editPlayerPermissionsForm" action="" method="post">
+        <label for="worldID">World ID:</label><br>
+        <input type="text" id="worldID" name="WorldID" required><br>
+        
+        <label for="permissionGroup">Permission Group:</label><br>
+        <input type="text" id="permissionGroup" name="PermissionGroup" required><br>
+        
+        <label for="playerID">Player ID:</label><br>
+        <input type="text" id="playerID" name="PlayerID" required><br>
+        
+        <label for="formType">Form Type:</label><br>
+        <select id="formType" name="FormType" required>
+            <option value="ADD">Add</option>
+            <option value="REMOVE">Remove</option>
+        </select><br><br>
+        
+        <input type="submit" value="Submit">
+    </form>
+
+    <script>
+        document.getElementById('editPlayerPermissionsForm').addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent the form from submitting normally
+            
+            // Get the values of WorldID, PermissionGroup, and PlayerID from the input fields
+            var worldID = document.getElementById('worldID').value;
+            var permissionGroup = document.getElementById('permissionGroup').value;
+            var playerID = document.getElementById('playerID').value;
+            
+            // Update the form action with the WorldID and PermissionGroup values
+            var formAction = "https://vrc.magmamc.dev/API/V1/Worlds/" + worldID + "/Groups/" + permissionGroup;
+            document.getElementById('editPlayerPermissionsForm').action = formAction;
+            
+            // Submit the form
+            this.submit();
+        });
+    </script>
+</body>
+</html>

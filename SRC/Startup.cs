@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Builder;
 
-namespace ServerBackend;
+namespace VRCWMT;
 public class Startup
 {
     public void ConfigureServices(IServiceCollection services)

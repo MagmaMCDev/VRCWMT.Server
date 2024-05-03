@@ -1,10 +1,10 @@
 ﻿using MagmaMc.MagmaSimpleConfig;
 
-namespace ServerBackend;
+namespace VRCWMT;
 
 public class ServerConfig: SimpleConfig
 {
-    public const string Filename = "Config.MSC";
+    public const string Filename = "VRCWMT.Config.MSC";
 
     public string IP = "";
     public string PORT = "";

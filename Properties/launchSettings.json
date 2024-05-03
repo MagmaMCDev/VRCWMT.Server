@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "ServerBackend": {
+    "VRCWMT": {
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {

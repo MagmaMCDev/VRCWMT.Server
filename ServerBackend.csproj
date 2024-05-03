@@ -5,8 +5,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <InvariantGlobalization>true</InvariantGlobalization>
-    <StartupObject>ServerBackend.Server</StartupObject>
-    <NoWarn>1701;1702;0008;0008</NoWarn>
+    <StartupObject>VRCWMT.Server</StartupObject>
+    <NoWarn>1701;1702;0008;8500;8981</NoWarn>
     <Platforms>AnyCPU;x64</Platforms>
     <UserSecretsId>568ea3f4-8bdb-48f0-ac88-26a4e9bc06cd</UserSecretsId>
   </PropertyGroup>
@@ -24,8 +24,9 @@
     <Description>$(Title)</Description>
     <Copyright>MIT</Copyright>
     <PackageProjectUrl>$(RepositoryUrl)</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/MagmaMCDev/VRCWMT.Server</RepositoryUrl>
+    <RepositoryUrl>https://github.com/MagmaMCDev/VRCWMT</RepositoryUrl>
     <PublishTrimmed>False</PublishTrimmed>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
   
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -49,11 +50,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AspNet.Security.OAuth.GitHub" Version="8.0.0" />
     <PackageReference Include="MagmaMc.JEF" Version="5.0.1" />
     <PackageReference Include="MagmaMc.MagmaSimpleConfig" Version="2.1.1" />
-    <PackageReference Include="MagmaMc.UAS" Version="0.2.1" />
-    <PackageReference Include="Microsoft.Owin.Security.OAuth" Version="4.2.2" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.20.1" />
     <PackageReference Include="Nanoid" Version="3.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
@@ -63,7 +61,12 @@
 
   <ItemGroup>
     <Reference Include="MagmaMc.SharedLibrary">
-      <HintPath>MagmaMc.SharedLibrary.dll</HintPath>
+      <HintPath>Libraries/MagmaMc.SharedLibrary.dll</HintPath>
+      <DocumentationFile>Libraries/MagmaMc.SharedLibrary.xml</DocumentationFile>
+    </Reference>
+    <Reference Include="MagmaMC.Unity.PSC">
+      <HintPath>Libraries/MagmaMC.Unity.PSC.dll</HintPath>
+      <DocumentationFile>Libraries/MagmaMC.Unity.PSC.xml</DocumentationFile>
     </Reference>
   </ItemGroup>
 

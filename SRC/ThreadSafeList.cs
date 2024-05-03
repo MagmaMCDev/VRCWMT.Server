@@ -2,8 +2,8 @@
 
 public class ThreadList<T> : ICollection<T>, IEnumerable<T>, IEnumerable, IList<T>, IReadOnlyCollection<T>, IReadOnlyList<T>, ICollection, IDisposable
 {
-    private List<T> list = new List<T>();
-    private SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
+    private readonly List<T> list = new();
+    private readonly SemaphoreSlim semaphore = new(1, 1);
     private bool disposed = false;
 
     public T this[int index]

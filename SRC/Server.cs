@@ -4,10 +4,10 @@ using System.Runtime.Versioning;
 using System.Text;
 using System.Text.Json;
 using MagmaMc.SharedLibrary;
-using ServerBackend.Models;
+using VRCWMT.Models;
 using Spectre.Console;
 
-namespace ServerBackend;
+namespace VRCWMT;
 public class Server
 {
 #pragma warning disable CS8618
@@ -68,7 +68,7 @@ public class Server
             }
             if (!VRChat.LoggedIn)
             {
-                AnsiConsole.MarkupLine("[red]VRChat Auth Invalid Attempting Auto Login");
+                AnsiConsole.MarkupLine("[red]VRChat Auth Invalid Attempting Auto Login[/]");
                 do
                 {
                     VRChat.SemiAutoLogin();
@@ -146,6 +146,8 @@ public class Server
                     {
                         AnsiConsole.MarkupLine("[red]Clearing Database...[/]");
                         Thread.Sleep(250);
+                        Directory.Delete("VRCWorldImages", true);
+                        Directory.CreateDirectory("VRCWorldImages");
                         Database = new Database();
                         Database.SaveContents(Database);
                         AnsiConsole.MarkupLine("[red]Database Cleared[/]");

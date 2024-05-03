@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
-using ServerBackend.Models;
-namespace ServerBackend;
+using VRCWMT.Models;
+namespace VRCWMT;
 
 public class Github
 {
@@ -16,21 +16,22 @@ public class Github
         if (_userCache.TryGetValue(token, out var cachedUser))
             return cachedUser;
 
-        GithubUser user = await FetchUserAsync(token);
+        GithubUser user = (await FetchUserAsync(token))!;
         _userCache[token] = user;
         return user;
     }
 
-    private static async Task<GithubUser> FetchUserAsync(string token)
+    private static async Task<GithubUser?> FetchUserAsync(string token)
     {
         using var httpClient = new HttpClient();
         httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
         httpClient.DefaultRequestHeaders.Add("User-Agent", Server.User_Agent);
 
         var response = await httpClient.GetAsync("https://api.github.com/user");
-        response.EnsureSuccessStatusCode();
+        if (!response.IsSuccessStatusCode)
+            return null;
         var json = await response.Content.ReadAsStringAsync();
-        var userData = JsonSerializer.Deserialize<GithubUser>(json);
+        var userData = JsonSerializer.Deserialize<GithubUser>(json)!;
         userData.Access_Token = token;
         return userData;
     }
@@ -46,8 +47,8 @@ public class GithubRepo
 
         var response = await httpClient.GetAsync($"https://api.github.com/repos/{repoName}/contributors");
         response.EnsureSuccessStatusCode();
-        var json = await response.Content.ReadAsStringAsync();
-        var contributors = JsonSerializer.Deserialize<List<Contributor>>(json);
+        string json = await response.Content.ReadAsStringAsync();
+        List<Contributor> contributors = JsonSerializer.Deserialize<List<Contributor>>(json)!;
         return contributors.Select(c => c.Login).ToArray();
     }
 
@@ -71,15 +72,18 @@ public class GithubRepo
 
     private class Contributor
     {
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         public string Login
         {
             get; set;
         }
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
     }
 }
 
 public class GithubUser
 {
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
     public string login
     {
         get; set;
@@ -100,6 +104,7 @@ public class GithubUser
     {
         get; set;
     }
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 }
 
 public static class GithubAuthExtensions

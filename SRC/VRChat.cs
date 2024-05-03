@@ -2,28 +2,30 @@
 using System.Text;
 using System.Text.Json;
 using Spectre.Console;
-using ServerBackend.Models;
+using VRCWMT.Models;
 using System.Collections.Concurrent;
-namespace ServerBackend;
+namespace VRCWMT;
 
 public static class VRChat
 {
     public static string Username = "";
     public static string Password = "";
+    private static readonly ConcurrentDictionary<string, Task<VRChatUser>> _userCache = new();
 
-    private static readonly ConcurrentDictionary<string, VRChatUser> _userCache = new();
     public static void ClearCache() => _userCache.Clear();
 
-    public static async Task<VRChatUser> GetUserAsync(string User_ID)
+    public static Task<VRChatUser> GetUserAsync(string User_ID)
     {
         string userid = User_ID.ToLower().Trim();
-        if (_userCache.TryGetValue(userid, out var cachedUser))
-            return cachedUser;
 
-        VRChatUser user = await FetchUserAsync(userid);
-        _userCache[userid] = user;
-        return user;
+        return _userCache.GetOrAdd(userid, async (_) =>
+        {
+            VRChatUser user = await FetchUserAsync(userid);
+            user._cache = false;
+            return user;
+        });
     }
+
     public static VRChatUser GetUser(string User_ID) => GetUserAsync(User_ID).GetAwaiter().GetResult();
 
     private static async Task<VRChatUser> FetchUserAsync(string userid)

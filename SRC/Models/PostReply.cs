@@ -1,4 +1,4 @@
-﻿namespace ServerBackend.Models;
+﻿namespace VRCWMT.Models;
 
 public class PostReply
 {

@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace ServerBackend.Models;
+namespace VRCWMT.Models;
 
 public class TwoFactorAuth
 {
