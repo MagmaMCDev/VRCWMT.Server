@@ -4,7 +4,7 @@ namespace VRCWMT;
 
 public class ServerConfig: SimpleConfig
 {
-    public const string Filename = "VRCWMT.Config.MSC";
+    public const string Filename = "ServerConfig.MSC";
 
     public string IP = "";
     public string PORT = "";
