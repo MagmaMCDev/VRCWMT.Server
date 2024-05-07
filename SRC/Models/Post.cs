@@ -2,9 +2,9 @@
 
 public class Post
 {
-    public string OriginalPoster { get; set; } = "";
-    public string HeaderName { get; set; } = "";
-    public string Description { get; set; } = "";
-    public DateTime PostTime { get; set; } = DateTime.Now;
-    public List<PostReply> Replies { get; set; } = new List<PostReply>();
+    public string originalPoster { get; set; } = "";
+    public string headerName { get; set; } = "";
+    public string description { get; set; } = "";
+    public DateTime postTime { get; set; } = DateTime.Now;
+    public List<PostReply> replies { get; set; } = new List<PostReply>();
 }

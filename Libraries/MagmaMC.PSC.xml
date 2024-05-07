@@ -1,117 +1,117 @@
 <?xml version="1.0"?>
 <doc>
     <assembly>
-        <name>MagmaMC.Unity.PSC</name>
+        <name>MagmaMC.PSC</name>
     </assembly>
     <members>
-        <member name="T:MagmaMC.Unity.PSC.Group">
+        <member name="T:MagmaMC.PSC.Group">
             <summary>
             Represents a group with its permissions and players.
             </summary>
         </member>
-        <member name="M:MagmaMC.Unity.PSC.Group.#ctor">
+        <member name="M:MagmaMC.PSC.Group.#ctor">
             <summary>
-            Initializes a new instance of the <see cref="T:MagmaMC.Unity.PSC.Group"/> class.
+            Initializes a new instance of the <see cref="T:MagmaMC.PSC.Group"/> class.
             </summary>
         </member>
-        <member name="P:MagmaMC.Unity.PSC.Group.Name">
+        <member name="P:MagmaMC.PSC.Group.Name">
             <summary>
             Gets or sets the group name.
             </summary>
         </member>
-        <member name="P:MagmaMC.Unity.PSC.Group.Permissions">
+        <member name="P:MagmaMC.PSC.Group.Permissions">
             <summary>
             Gets the permissions of the group.
             </summary>
         </member>
-        <member name="P:MagmaMC.Unity.PSC.Group.Players">
+        <member name="P:MagmaMC.PSC.Group.Players">
             <summary>
             Gets the players in the group.
             </summary>
         </member>
-        <member name="T:MagmaMC.Unity.PSC.PSC">
+        <member name="T:MagmaMC.PSC.PSC">
             <summary>
             Represents a parser for Magma's Permission System Config data.
             </summary>
         </member>
-        <member name="F:MagmaMC.Unity.PSC.PSC._groups">
+        <member name="F:MagmaMC.PSC.PSC._groups">
             <summary>
             Name, Permissions, Players
             </summary>
         </member>
-        <member name="M:MagmaMC.Unity.PSC.PSC.Load(System.String)">
+        <member name="M:MagmaMC.PSC.PSC.Load(System.String)">
             <summary>
             Loads the Permission System Config data.
             </summary>
             <param name="Data">The data to load.</param>
         </member>
-        <member name="M:MagmaMC.Unity.PSC.PSC.Load(System.String,System.Boolean)">
+        <member name="M:MagmaMC.PSC.PSC.Load(System.String,System.Boolean)">
             <summary>
             Loads the Permission System Config data.
             </summary>
             <param name="Data">The data to load.</param>
             <param name="Overwrite">If set to <c>true</c>, overwrites existing data.</param>
         </member>
-        <member name="M:MagmaMC.Unity.PSC.PSC.GetGroups">
+        <member name="M:MagmaMC.PSC.PSC.GetGroups">
             <summary>
             Gets the list of groups.
             </summary>
             <returns>An array of group names.</returns>
-            <exception cref="T:MagmaMC.Unity.PSC.NotInitializedException">Thrown when the PSC instance is not initialized.</exception>
+            <exception cref="T:MagmaMC.PSC.NotInitializedException">Thrown when the PSC instance is not initialized.</exception>
         </member>
-        <member name="M:MagmaMC.Unity.PSC.PSC.GetPlayers(System.String[])">
+        <member name="M:MagmaMC.PSC.PSC.GetPlayers(System.String[])">
             <summary>
             Gets the players with given permissions.
             </summary>
             <param name="Permissions">The permissions to filter by.</param>
             <returns>An array of player names.</returns>
-            <exception cref="T:MagmaMC.Unity.PSC.NotInitializedException">Thrown when the PSC instance is not initialized.</exception>
+            <exception cref="T:MagmaMC.PSC.NotInitializedException">Thrown when the PSC instance is not initialized.</exception>
         </member>
-        <member name="M:MagmaMC.Unity.PSC.PSC.GetPlayers(System.String)">
+        <member name="M:MagmaMC.PSC.PSC.GetPlayers(System.String)">
             <summary>
             Gets the players in a specific group.
             </summary>
             <param name="GroupName">The name of the group.</param>
             <returns>An array of player names.</returns>
-            <exception cref="T:MagmaMC.Unity.PSC.NotInitializedException">Thrown when the PSC instance is not initialized.</exception>
-            <exception cref="T:MagmaMC.Unity.PSC.GroupNotFoundException">Thrown when the group is not found.</exception>
+            <exception cref="T:MagmaMC.PSC.NotInitializedException">Thrown when the PSC instance is not initialized.</exception>
+            <exception cref="T:MagmaMC.PSC.GroupNotFoundException">Thrown when the group is not found.</exception>
         </member>
-        <member name="M:MagmaMC.Unity.PSC.PSC.AddGroup(System.String,System.String[])">
+        <member name="M:MagmaMC.PSC.PSC.AddGroup(System.String,System.String[])">
             <summary>
             Adds a new group with specified permissions.
             </summary>
             <param name="GroupName">The name of the group.</param>
             <param name="Permissions">The permissions of the group.</param>
-            <exception cref="T:MagmaMC.Unity.PSC.NotInitializedException">Thrown when the PSC instance is not initialized.</exception>
-            <exception cref="T:MagmaMC.Unity.PSC.GroupAlreadyExistsException">Thrown when the group already exists.</exception>
+            <exception cref="T:MagmaMC.PSC.NotInitializedException">Thrown when the PSC instance is not initialized.</exception>
+            <exception cref="T:MagmaMC.PSC.GroupAlreadyExistsException">Thrown when the group already exists.</exception>
         </member>
-        <member name="M:MagmaMC.Unity.PSC.PSC.RemoveGroup(System.String)">
+        <member name="M:MagmaMC.PSC.PSC.RemoveGroup(System.String)">
             <summary>
             Removes a group.
             </summary>
             <param name="GroupName">The name of the group to remove.</param>
-            <exception cref="T:MagmaMC.Unity.PSC.NotInitializedException">Thrown when the PSC instance is not initialized.</exception>
-            <exception cref="T:MagmaMC.Unity.PSC.GroupNotFoundException">Thrown when the group is not found.</exception>
+            <exception cref="T:MagmaMC.PSC.NotInitializedException">Thrown when the PSC instance is not initialized.</exception>
+            <exception cref="T:MagmaMC.PSC.GroupNotFoundException">Thrown when the group is not found.</exception>
         </member>
-        <member name="M:MagmaMC.Unity.PSC.PSC.AddPlayer(System.String,System.String)">
+        <member name="M:MagmaMC.PSC.PSC.AddPlayer(System.String,System.String)">
             <summary>
             Adds a player to a group.
             </summary>
             <param name="PlayerID">The ID of the player to add.</param>
             <param name="GroupName">The name of the group to add the player to.</param>
             <returns><c>true</c> if the player was added successfully; otherwise, <c>false</c>.</returns>
-            <exception cref="T:MagmaMC.Unity.PSC.NotInitializedException">Thrown when the PSC instance is not initialized.</exception>
-            <exception cref="T:MagmaMC.Unity.PSC.GroupNotFoundException">Thrown when the group is not found.</exception>
+            <exception cref="T:MagmaMC.PSC.NotInitializedException">Thrown when the PSC instance is not initialized.</exception>
+            <exception cref="T:MagmaMC.PSC.GroupNotFoundException">Thrown when the group is not found.</exception>
         </member>
-        <member name="M:MagmaMC.Unity.PSC.PSC.RemovePlayer(System.String,System.String)">
+        <member name="M:MagmaMC.PSC.PSC.RemovePlayer(System.String,System.String)">
             <summary>
             Removes a player from a group.
             </summary>
             <param name="PlayerID">The ID of the player to remove.</param>
             <param name="GroupName">The name of the group to remove the player from.</param>
-            <exception cref="T:MagmaMC.Unity.PSC.NotInitializedException">Thrown when the PSC instance is not initialized.</exception>
-            <exception cref="T:MagmaMC.Unity.PSC.GroupNotFoundException">Thrown when the group is not found.</exception>
-            <exception cref="T:MagmaMC.Unity.PSC.PlayerNotFoundException">Thrown when the player is not found.</exception>
+            <exception cref="T:MagmaMC.PSC.NotInitializedException">Thrown when the PSC instance is not initialized.</exception>
+            <exception cref="T:MagmaMC.PSC.GroupNotFoundException">Thrown when the group is not found.</exception>
+            <exception cref="T:MagmaMC.PSC.PlayerNotFoundException">Thrown when the player is not found.</exception>
         </member>
     </members>
 </doc>

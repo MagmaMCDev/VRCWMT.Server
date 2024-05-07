@@ -2,10 +2,10 @@
 
 public class SiteUser
 {
-    public string Username { get; set; } = "";
-    public bool SiteAdmin { get; set; } = false;
-    public bool WorldCreater { get; set; } = false;
-    public bool SiteOwner { get; set; } = false;
+    public string username { get; set; } = "";
+    public bool siteAdmin { get; set; } = false;
+    public bool worldCreator { get; set; } = false;
+    public bool siteOwner { get; set; } = false;
 
-    public override string ToString() => Username;
+    public override string ToString() => username;
 }

@@ -3,9 +3,12 @@ using System.Net;
 using System.Runtime.Versioning;
 using System.Text;
 using System.Text.Json;
-using MagmaMc.SharedLibrary;
+using MagmaMC.SharedLibrary;
 using VRCWMT.Models;
 using Spectre.Console;
+using ServerBackend;
+using OpenVRChatAPI;
+using OpenVRChatAPI.Models;
 
 namespace VRCWMT;
 public class Server
@@ -23,10 +26,19 @@ public class Server
 
     public static void Main(string[] args)
     {
+        Console.OutputEncoding = Encoding.UTF8;
         Commands.SetupConfig();
 
         if (!VRChat.LoggedIn)
+        {
             VRChat.SemiAutoLogin();
+            CFG.VRC_auth = VRChat.Auth.auth;
+            CFG.VRC_twoFactorAuth = VRChat.Auth.twoFactorAuth;
+            CFG.SetValue("VRCHAT_auth", CFG.VRC_auth, "VRCWMT");
+            CFG.SetValue("VRCHAT_twoFactorAuth", CFG.VRC_twoFactorAuth, "VRCWMT");
+            CFG.SetValue("VRCHAT_name", Convert.ToBase64String(Encoding.UTF8.GetBytes(VRChat.Username)), "VRCWMT");
+            CFG.SetValue("VRCHAT_pass", Convert.ToBase64String(Encoding.UTF8.GetBytes(VRChat.Password)), "VRCWMT");
+        }
         if (!VRChat.LoggedIn)
             Commands.Login();
         WebServer = CreateHostBuilder().Build();
@@ -66,13 +78,20 @@ public class Server
                 if (!MainThread.IsAlive)
                     return;
             }
-            if (!VRChat.LoggedIn)
+            try
             {
-                AnsiConsole.MarkupLine("[red]VRChat Auth Invalid Attempting Auto Login[/]");
-                do
+                if (!VRChat.LoggedIn)
                 {
-                    VRChat.SemiAutoLogin();
-                } while(!VRChat.LoggedIn);
+                    AnsiConsole.MarkupLine("[red]VRChat Auth Invalid Attempting Auto Login[/]");
+                    do
+                    {
+                        VRChat.SemiAutoLogin();
+                    } while (!VRChat.LoggedIn);
+                }
+            } catch(Exception e) 
+            {
+                AnsiConsole.MarkupLine($"[red]VRChat Auth Failed To Check Login: {e.Message}[/]");
+                Thread.Sleep(1000);
             }
         }
     }
@@ -106,9 +125,9 @@ public class Server
             switch(Key)
             {
                 case "ADDEXAMPLEWORLD" or "ADDDUMMYWORLD":
-                    VRCW world = new VRCW() { WorldName = "examplename", WorldCreator = "examplemaster", WorldDescription = "A great World Description" };
-                    world.Posts.Add(new Post() { Description = "test description", HeaderName = "example header", OriginalPoster = "MagmaMC" });
-                    world.Posts.Add(new Post() { Description = "test description 2", HeaderName = "example header 2", OriginalPoster = "NotMagmaMC", Replies = new List<PostReply>() { new() { Username = "MagmaMC", Text = "You Are A Copy" } } });
+                    VRCW world = new VRCW() { worldName = "examplename", worldCreator = "examplemaster", worldDescription = "A great World Description" };
+                    world.Posts.Add(new Post() { description = "test description", headerName = "example header", originalPoster = "MagmaMC" });
+                    world.Posts.Add(new Post() { description = "test description 2", headerName = "example header 2", originalPoster = "NotMagmaMC", replies = new List<PostReply>() { new() { username = "MagmaMC", text = "You Are A Copy" } } });
                     string id = Database.NewID;
                     Database.Worlds.TryAdd(id, world);
                     Debugger.Info($"Added New Dummy World, `{id}`");
@@ -116,7 +135,7 @@ public class Server
                 case "DELETEEXAMPLEWORLDS" or "DELETEDUMMYWORLDS":
                     List<string> _Worlds = new List<string>();
                     foreach (var pair in Database.Worlds)
-                        if (pair.Value.WorldName.Equals("examplename", StringComparison.OrdinalIgnoreCase))
+                        if (pair.Value.worldName.Equals("examplename", StringComparison.OrdinalIgnoreCase))
                             _Worlds.Add(pair.Key);
 
                     foreach (string WorldID in _Worlds)
@@ -174,9 +193,11 @@ public class Server
                     if (!AnsiConsole.Ask("[red]Are You Sure You Want To Logout (Restart Required!)[/]", false))
                         break;
                     CFG.VRC_auth = "";
-                    CFG.SetValue("VRCHAT_auth", "", "VRCWMT");
                     CFG.VRC_twoFactorAuth = "";
+                    CFG.SetValue("VRCHAT_auth", "", "VRCWMT");
                     CFG.SetValue("VRCHAT_twoFactorAuth", "", "VRCWMT");
+                    CFG.SetValue("VRCHAT_name", "", "VRCWMT");
+                    CFG.SetValue("VRCHAT_pass", "", "VRCWMT");
                     Thread.Sleep(1000);
                     Commands.Restart();
                     break;
@@ -193,7 +214,7 @@ public class Server
                         break;
                     }
 
-                    VRChatUser User = JsonSerializer.Deserialize<VRChatUser>(VRChat.VRCHTTPClient.GetAsync("auth/user").GetHTTPString())!;
+                    VRCUser User = JsonSerializer.Deserialize<VRCUser>(VRChat.VRCHTTPClient.GetAsync("auth/user").GetHTTPString())!;
                     AnsiConsole.MarkupLine($"Username: {User.displayName}");
                     break;
                 case "RESTART":
@@ -255,6 +276,12 @@ public class Server
             do
             {
                 VRChat.InteractiveLogin();
+                CFG.VRC_auth = VRChat.Auth.auth;
+                CFG.VRC_twoFactorAuth = VRChat.Auth.twoFactorAuth;
+                CFG.SetValue("VRCHAT_auth", CFG.VRC_auth, "VRCWMT");
+                CFG.SetValue("VRCHAT_twoFactorAuth", CFG.VRC_twoFactorAuth, "VRCWMT");
+                CFG.SetValue("VRCHAT_name", Convert.ToBase64String(Encoding.UTF8.GetBytes(VRChat.Username)), "VRCWMT");
+                CFG.SetValue("VRCHAT_pass", Convert.ToBase64String(Encoding.UTF8.GetBytes(VRChat.Password)), "VRCWMT");
             }
             while (!VRChat.LoggedIn);
         }
@@ -365,6 +392,8 @@ public class Server
             CFG.VRC_twoFactorAuth = CFG.GetValue("VRCHAT_twoFactorAuth", "VRCWMT", "");
             VRChat.Username = Encoding.UTF8.GetString(Convert.FromBase64String(CFG.GetValue("VRCHAT_name", "VRCWMT", "")));
             VRChat.Password = Encoding.UTF8.GetString(Convert.FromBase64String(CFG.GetValue("VRCHAT_pass", "VRCWMT", "")));
+            VRChat.Auth.auth = CFG.VRC_auth;
+            VRChat.Auth.twoFactorAuth = CFG.VRC_twoFactorAuth;
             CFG.SetValue("IP", CFG.IP, "VRCWMT");
             CFG.SetValue("PORT", CFG.PORT, "VRCWMT");
             CFG.SetValue("SiteOwner", CFG.SiteOwner, "VRCWMT");

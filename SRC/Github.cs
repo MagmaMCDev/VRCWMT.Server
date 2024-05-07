@@ -117,7 +117,7 @@ public static class GithubAuthExtensions
         string ID = WRD_ID.Trim().ToUpper();
         if (!Server.Database.Worlds.ContainsKey(ID))
             return false;
-        return Server.Database.Worlds[ID].WorldCreator.ToLower() == user.login.ToLower();
+        return Server.Database.Worlds[ID].worldCreator.ToLower() == user.login.ToLower();
     }
     public static bool IsMapAdmin(this GithubUser user, string WRD_ID)
     {
@@ -134,9 +134,9 @@ public static class GithubAuthExtensions
         if (user.IsSiteOwner())
             return true;
 
-        if (World.WorldCreator.ToLower() == user.login.ToLower())
+        if (World.worldCreator.ToLower() == user.login.ToLower())
             return true;
-        foreach (string Admin in World.SiteAdmins)
+        foreach (string Admin in World.siteAdmins)
         {
             if (Admin.ToLower() == user.login.ToLower())
                 return true;
@@ -147,7 +147,7 @@ public static class GithubAuthExtensions
     {
         if (user.IsSiteOwner())
             return true;
-        return WRD.WorldCreator.ToLower() == user.login.ToLower().Trim();
+        return WRD.worldCreator.ToLower() == user.login.ToLower().Trim();
     }
 
 }

@@ -2,7 +2,7 @@
 
 public class PostReply
 {
-    public string Username { get; set; } = "";
-    public string Text { get; set; } = "";
-    public DateTime PostTime { get; set; } = DateTime.Now;
+    public string username { get; set; } = "";
+    public string text { get; set; } = "";
+    public DateTime postTime { get; set; } = DateTime.Now;
 }

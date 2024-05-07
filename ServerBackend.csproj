@@ -60,13 +60,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="MagmaMc.SharedLibrary">
-      <HintPath>Libraries/MagmaMc.SharedLibrary.dll</HintPath>
-      <DocumentationFile>Libraries/MagmaMc.SharedLibrary.xml</DocumentationFile>
+    <Reference Include="MagmaMC.SharedLibrary">
+      <HintPath>Libraries/MagmaMC.SharedLibrary.dll</HintPath>
+      <DocumentationFile>Libraries/MagmaMC.SharedLibrary.xml</DocumentationFile>
     </Reference>
-    <Reference Include="MagmaMC.Unity.PSC">
-      <HintPath>Libraries/MagmaMC.Unity.PSC.dll</HintPath>
-      <DocumentationFile>Libraries/MagmaMC.Unity.PSC.xml</DocumentationFile>
+    <Reference Include="OpenVRChatAPI">
+      <HintPath>Libraries/OpenVRChatAPI.dll</HintPath>
+    </Reference>
+    <Reference Include="MagmaMC.PSC">
+      <HintPath>Libraries/MagmaMC.PSC.dll</HintPath>
+      <DocumentationFile>Libraries/MagmaMC.PSC.xml</DocumentationFile>
     </Reference>
   </ItemGroup>
 

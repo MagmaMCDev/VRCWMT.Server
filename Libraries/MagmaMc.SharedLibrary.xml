@@ -1,181 +1,140 @@
 <?xml version="1.0"?>
 <doc>
     <assembly>
-        <name>MagmaMc.SharedLibrary</name>
+        <name>MagmaMC.SharedLibrary</name>
     </assembly>
     <members>
-        <member name="T:MagmaMc.SharedLibrary.LoggingLevel">
+        <member name="T:MagmaMC.SharedLibrary.LoggingLevel">
             <summary>
             Represents the logging level for the logger.
             </summary>
         </member>
-        <member name="F:MagmaMc.SharedLibrary.LoggingLevel.Debug">
+        <member name="F:MagmaMC.SharedLibrary.LoggingLevel.Debug">
             <summary>
             Represents debug logging level.
             </summary>
         </member>
-        <member name="F:MagmaMc.SharedLibrary.LoggingLevel.Info">
+        <member name="F:MagmaMC.SharedLibrary.LoggingLevel.Info">
             <summary>
             Represents info logging level.
             </summary>
         </member>
-        <member name="F:MagmaMc.SharedLibrary.LoggingLevel.Warn">
+        <member name="F:MagmaMC.SharedLibrary.LoggingLevel.Warn">
             <summary>
             Represents warning logging level.
             </summary>
         </member>
-        <member name="F:MagmaMc.SharedLibrary.LoggingLevel.Error">
+        <member name="F:MagmaMC.SharedLibrary.LoggingLevel.Error">
             <summary>
             Represents error logging level.
             </summary>
         </member>
-        <member name="T:MagmaMc.SharedLibrary.Logger">
+        <member name="T:MagmaMC.SharedLibrary.Logger">
             <summary>
             Provides logging functionality.
             </summary>
         </member>
-        <member name="E:MagmaMc.SharedLibrary.Logger.DebugLogged">
+        <member name="E:MagmaMC.SharedLibrary.Logger.DebugLogged">
             <summary>
             Occurs when a debug message is logged.
             </summary>
         </member>
-        <member name="E:MagmaMc.SharedLibrary.Logger.InfoLogged">
+        <member name="E:MagmaMC.SharedLibrary.Logger.InfoLogged">
             <summary>
             Occurs when a info message is logged.
             </summary>
         </member>
-        <member name="E:MagmaMc.SharedLibrary.Logger.WarnLogged">
+        <member name="E:MagmaMC.SharedLibrary.Logger.WarnLogged">
             <summary>
             Occurs when a Warn message is logged.
             </summary>
         </member>
-        <member name="E:MagmaMc.SharedLibrary.Logger.ErrorLogged">
+        <member name="E:MagmaMC.SharedLibrary.Logger.ErrorLogged">
             <summary>
             Occurs when a Error message is logged.
             </summary>
         </member>
-        <member name="M:MagmaMc.SharedLibrary.Logger.#ctor(MagmaMc.SharedLibrary.LoggingLevel)">
+        <member name="M:MagmaMC.SharedLibrary.Logger.#ctor(MagmaMC.SharedLibrary.LoggingLevel)">
             <summary>
-            Initializes a new instance of the <see cref="T:MagmaMc.SharedLibrary.Logger"/> class with the specified logging level.
+            Initializes a new instance of the <see cref="T:MagmaMC.SharedLibrary.Logger"/> class with the specified logging level.
             </summary>
             <param name="loggingLevel">The logging level to set.</param>
         </member>
-        <member name="M:MagmaMc.SharedLibrary.Logger.Debug(System.String)">
+        <member name="M:MagmaMC.SharedLibrary.Logger.Debug(System.String)">
             <summary>
             Logs a debug message.
             </summary>
             <param name="message">The debug message to log.</param>
         </member>
-        <member name="M:MagmaMc.SharedLibrary.Logger.Info(System.String)">
+        <member name="M:MagmaMC.SharedLibrary.Logger.Info(System.String)">
             <summary>
             Logs an info message.
             </summary>
             <param name="message">The info message to log.</param>
         </member>
-        <member name="M:MagmaMc.SharedLibrary.Logger.Warn(System.String)">
+        <member name="M:MagmaMC.SharedLibrary.Logger.Warn(System.String)">
             <summary>
             Logs a warning message.
             </summary>
             <param name="message">The warning message to log.</param>
         </member>
-        <member name="M:MagmaMc.SharedLibrary.Logger.Error(System.String)">
+        <member name="M:MagmaMC.SharedLibrary.Logger.Error(System.String)">
             <summary>
             Logs an error message.
             </summary>
             <param name="message">The error message to log.</param>
         </member>
-        <member name="T:MagmaMc.SharedLibrary.Authorization">
+        <member name="T:MagmaMC.SharedLibrary.ComputerInfo">
             <summary>
             Provides authorization-related functionality.
             </summary>
         </member>
-        <member name="M:MagmaMc.SharedLibrary.Authorization.GetPublicIPv4">
+        <member name="M:MagmaMC.SharedLibrary.ComputerInfo.GetPublicIPv4">
             <summary>
             Gets the public IPv4 address of the machine.
             </summary>
             <returns>The public IPv4 address.</returns>
         </member>
-        <member name="P:MagmaMc.SharedLibrary.Authorization.MacAddress">
+        <member name="P:MagmaMC.SharedLibrary.ComputerInfo.MacAddress">
             <summary>
             Gets the MAC address of the machine.
             </summary>
         </member>
-        <member name="P:MagmaMc.SharedLibrary.Authorization.PCName">
+        <member name="P:MagmaMC.SharedLibrary.ComputerInfo.PCName">
             <summary>
             Gets the name of the machine.
             </summary>
         </member>
-        <member name="P:MagmaMc.SharedLibrary.Authorization.UserName">
+        <member name="P:MagmaMC.SharedLibrary.ComputerInfo.UserName">
             <summary>
             Gets the username of the machine.
             </summary>
         </member>
-        <member name="F:MagmaMc.SharedLibrary.Authorization.VERSION">
+        <member name="F:MagmaMC.SharedLibrary.ComputerInfo.VERSION">
             <summary>
             The version of the application.
             </summary>
         </member>
-        <member name="M:MagmaMc.SharedLibrary.Authorization.Generate">
+        <member name="M:MagmaMC.SharedLibrary.ComputerInfo.Generate">
             <summary>
             Generates a unique token based on the machine's information.
             </summary>
             <returns>The generated token.</returns>
         </member>
-        <member name="T:MagmaMc.SharedLibrary.URL">
+        <member name="T:MagmaMC.SharedLibrary.URL">
             <summary>
             Represents a URL with path segments and query parameters.
             </summary>
         </member>
-        <member name="F:MagmaMc.SharedLibrary.URL.path">
+        <member name="F:MagmaMC.SharedLibrary.URL.path">
             <summary>
             Gets or sets the path segments of the URL.
             </summary>
         </member>
-        <member name="F:MagmaMc.SharedLibrary.URL.args">
+        <member name="F:MagmaMC.SharedLibrary.URL.args">
             <summary>
             Gets or sets the query parameters of the URL.
             </summary>
-        </member>
-        <member name="T:MagmaMc.SharedLibrary.TokenData">
-            <summary>
-            Represents token data.
-            </summary>
-        </member>
-        <member name="P:MagmaMc.SharedLibrary.TokenData.MacAddress">
-            <summary>
-            Gets the MAC address.
-            </summary>
-        </member>
-        <member name="P:MagmaMc.SharedLibrary.TokenData.PCName">
-            <summary>
-            Gets the machine name.
-            </summary>
-        </member>
-        <member name="P:MagmaMc.SharedLibrary.TokenData.VERSION">
-            <summary>
-            Gets the application version.
-            </summary>
-        </member>
-        <member name="M:MagmaMc.SharedLibrary.TokenData.#ctor(System.String,System.String,System.String)">
-            <summary>
-            Initializes a new instance of the <see cref="T:MagmaMc.SharedLibrary.TokenData"/> class with MAC address, machine name, and version.
-            </summary>
-            <param name="macAddress">The MAC address.</param>
-            <param name="pcName">The machine name.</param>
-            <param name="version">The application version.</param>
-        </member>
-        <member name="M:MagmaMc.SharedLibrary.TokenData.ToString">
-            <summary>
-            Converts the token data to a string.
-            </summary>
-            <returns>The string representation of the token data.</returns>
-        </member>
-        <member name="M:MagmaMc.SharedLibrary.TokenData.Parse(System.String)">
-            <summary>
-            Parses a token string to create a <see cref="T:MagmaMc.SharedLibrary.TokenData"/> object.
-            </summary>
-            <param name="tokenString">The token string to parse.</param>
-            <returns>A <see cref="T:MagmaMc.SharedLibrary.TokenData"/> object if parsing is successful; otherwise, null.</returns>
         </member>
     </members>
 </doc>

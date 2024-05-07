@@ -1,9 +1,9 @@
 ﻿using Newtonsoft.Json;
 using MagmaMc.MagmaSimpleConfig.Utils;
 using System.Text;
-using Logger = MagmaMc.SharedLibrary.Logger;
 using NanoidDotNet;
-using MagmaMc.SharedLibrary;
+using MagmaMC.SharedLibrary;
+using Logger = MagmaMC.SharedLibrary.Logger;
 using System.Collections.Concurrent;
 using VRCWMT.Models;
 namespace VRCWMT;

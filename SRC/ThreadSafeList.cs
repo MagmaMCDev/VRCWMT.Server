@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Collections.Immutable;
 
 public class ThreadList<T> : ICollection<T>, IEnumerable<T>, IEnumerable, IList<T>, IReadOnlyCollection<T>, IReadOnlyList<T>, ICollection, IDisposable
 {
@@ -202,9 +203,7 @@ public class ThreadList<T> : ICollection<T>, IEnumerable<T>, IEnumerable, IList<
         if (!disposed)
         {
             if (disposing)
-            {
                 semaphore.Dispose();
-            }
 
             disposed = true;
         }
@@ -213,5 +212,30 @@ public class ThreadList<T> : ICollection<T>, IEnumerable<T>, IEnumerable, IList<
     ~ThreadList()
     {
         Dispose(false);
+    }
+
+    public static implicit operator ThreadList<T>(T[] array)
+    {
+        var threadList = new ThreadList<T>();
+        foreach (var item in array)
+            threadList.Add(item);
+
+        return threadList;
+    }
+    public static implicit operator ThreadList<T>(ImmutableArray<T> immutableArray)
+    {
+        var threadList = new ThreadList<T>();
+        foreach (var item in immutableArray)
+            threadList.Add(item);
+
+        return threadList;
+    }
+    public static implicit operator ThreadList<T>(Span<T> span)
+    {
+        var threadList = new ThreadList<T>();
+        foreach (var item in span)
+            threadList.Add(item);
+
+        return threadList;
     }
 }

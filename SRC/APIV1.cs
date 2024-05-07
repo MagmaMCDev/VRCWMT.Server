@@ -3,6 +3,12 @@ using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 using VRCWMT.Models;
 using VRCWMT.ENV;
+using System.Collections.Generic;
+using System.Collections.Concurrent;
+using ServerBackend;
+using OpenVRChatAPI;
+using OpenVRChatAPI.Models;
+using System.Numerics;
 
 namespace VRCWMT;
 [Route("api/v1/")]
@@ -10,22 +16,31 @@ namespace VRCWMT;
 public class APIV1 : ControllerBase
 {
     public const string APIRoute = "https://vrc.magmamc.dev/API/V1";
+    public const string RedirectBase = @"<script>window.location.href='https://vrc.magmamc.dev/';</script>";
+    public static string RedirectScript(string URL) => $@"<script>window.location.href='{URL}';</script>";
     public static string GithubOAuthURL => $"https://github.com/login/oauth/authorize?client_id={env.ClientID}&scope=repo,read:user&redirect_uri={APIRoute}/Github/OAuth/";
 
     #region Github
+
     [HttpGet("Logout")]
     [HttpPost("Logout")]
     public IActionResult Logout()
     {
         Response.Cookies.Delete("AuthToken");
-        string redirectScript = @"<script>window.location.href='https://vrc.magmamc.dev/';</script>";
 
-        return Content(redirectScript, "text/html");
+        return Content(RedirectBase, "text/html");
     }
 
     [HttpGet("Login")]
     [HttpGet("Github/Login")]
     public IActionResult GithubLogin() => RedirectPermanent(GithubOAuthURL);
+
+    [HttpGet("Client/Login")]
+    public IActionResult ClientLogin()
+    {
+        Response.Cookies.Append("Redirect", "http://localhost:3928/");
+        return Content(RedirectScript(GithubOAuthURL), "text/html");
+    }
 
     [HttpGet("Github/OAuth")]
     [HttpPost("Github/OAuth")]
@@ -44,9 +59,15 @@ public class APIV1 : ControllerBase
             return Redirect(GithubOAuthURL);
 
         Response.Cookies.Append("AuthToken", OAuth.access_token);
-        string redirectScript = @"<script>window.location.href='https://vrc.magmamc.dev/';</script>";
+        if (Request.Cookies.Keys.Contains("Redirect"))
+        {
+            Request.Cookies.TryGetValue("Redirect", out string? redirect);
+            Response.Cookies.Delete("Redirect");
+            return Content(RedirectScript(redirect! + "?auth="+OAuth.access_token), "text/html");
+        }
+        else
+            return Content(RedirectBase, "text/html");
 
-        return Content(redirectScript, "text/html");
     }
 
     [HttpGet("Github/Users/{AuthToken}")]
@@ -67,7 +88,7 @@ public class APIV1 : ControllerBase
     {
         try
         {
-            string? Token = Request.Cookies["AuthToken"];
+            string? Token = Request.Cookies["AuthToken"] ?? Request.Headers.Authorization;
 
             if (string.IsNullOrWhiteSpace(Token))
                 return Unauthorized("Unauthorized");
@@ -78,6 +99,9 @@ public class APIV1 : ControllerBase
 
             string WorldName = Request.Form["WorldName"].ToString();
             string WorldDesc = Request.Form["WorldDescription"].ToString();
+            string Repo = Request.Form["GithubRepo"].ToString();
+            if (Repo.Split('/').Length != 2)
+                return BadRequest("Invalid Github Repo.");
 
             if (!IsAscii(WorldName))
                 return BadRequest("WorldName must contain only ASCII characters.");
@@ -115,9 +139,11 @@ public class APIV1 : ControllerBase
 
             VRCW World = new VRCW()
             {
-                WorldName = WorldName,
-                WorldDescription = WorldDesc,
-                WorldCreator = User.login
+                github_OAuth = Token,
+                githubRepo = Repo,
+                worldName = WorldName,
+                worldDescription = WorldDesc,
+                worldCreator = User.login
             };
             Server.Database.Worlds.TryAdd(ID, World);
         }
@@ -190,10 +216,10 @@ public class APIV1 : ControllerBase
         {
             VRCW World = Server.Database.Worlds[WorldID];
             SiteUser User = new SiteUser();
-            User.Username = Username;
-            User.SiteOwner = User.Username.ToLower() == Server.Database.SiteOwner.ToLower();
-            User.WorldCreater = User.Username.ToLower() == World.WorldCreator.ToLower();
-            User.SiteAdmin = World.SiteAdmins.Select(u => u.ToLower()).Contains(Username.ToLower());
+            User.username = Username;
+            User.siteOwner = User.username.ToLower() == Server.Database.SiteOwner.ToLower();
+            User.worldCreator = User.username.ToLower() == World.worldCreator.ToLower();
+            User.siteAdmin = World.siteAdmins.Select(u => u.ToLower()).Contains(Username.ToLower());
             return Ok(User);
 
         }
@@ -259,7 +285,7 @@ public class APIV1 : ControllerBase
     {
         try
         {
-            string? Token = Request.Cookies["AuthToken"];
+            string? Token = Request.Cookies["AuthToken"] ?? Request.Headers.Authorization;
 
             if (string.IsNullOrWhiteSpace(Token))
                 return Unauthorized("Unauthorized");
@@ -276,9 +302,9 @@ public class APIV1 : ControllerBase
                 return NotFound("World Not Found");
             World.Posts.Add(new Post()
             {
-                HeaderName = HeaderName,
-                OriginalPoster = User.login,
-                Description = Description
+                headerName = HeaderName,
+                originalPoster = User.login,
+                description = Description
             });
             return Ok(World);
 
@@ -296,7 +322,7 @@ public class APIV1 : ControllerBase
     {
         try
         {
-            string? Token = Request.Cookies["AuthToken"];
+            string? Token = Request.Cookies["AuthToken"] ?? Request.Headers.Authorization;
 
             if (string.IsNullOrWhiteSpace(Token))
                 return Unauthorized("Unauthorized");
@@ -323,10 +349,10 @@ public class APIV1 : ControllerBase
             Post = World.Posts[PostNumber];
 
             PostReply postReply = new PostReply();
-            postReply.Username = User.login;
-            postReply.Text = Text;
+            postReply.username = User.login;
+            postReply.text = Text;
 
-            Post.Replies.Add(postReply);
+            Post.replies.Add(postReply);
             World.Posts[PostNumber] = Post;
             Server.Database.Worlds[WorldID] = World;
             return Ok(World);
@@ -344,7 +370,7 @@ public class APIV1 : ControllerBase
     [HttpGet("Worlds/{WorldID}/Groups/{PermissionGroup}")]
     public IActionResult GetPlayerPermissions(string WorldID, string PermissionGroup)
     {
-        string? Token = Request.Cookies["AuthToken"];
+        string? Token = Request.Cookies["AuthToken"] ?? Request.Headers.Authorization;
         string groupname = PermissionGroup.Trim().ToUpper();
 
         if (string.IsNullOrWhiteSpace(Token))
@@ -361,10 +387,10 @@ public class APIV1 : ControllerBase
         if (!User.IsMapAdmin(World))
             return Unauthorized("Unauthorized");
 
-        if (!World.PermissionsData.ContainsKey(groupname))
+        if (!World.permissionsData.ContainsKey(groupname))
             return NotFound("Group Not Found");
 
-        PlayerItem[] permissions = ((PlayerItem[])World.PermissionsData[groupname].Values.ToArray().Clone());
+        PlayerItem[] permissions = ((PlayerItem[])World.permissionsData[groupname].Values.ToArray().Clone());
 
         unsafe
         {
@@ -372,11 +398,8 @@ public class APIV1 : ControllerBase
             {
                 for (int i = 0; i < permissions.Length; i++)
                 {
-                    if (Debugger.IsAttached)
-                        Thread.Sleep(50);
-
                     PlayerItem* currentItem = p + i;
-                    currentItem->displayName = VRChat.GetUser(currentItem->PlayerID).displayName;
+                    currentItem->displayName = VRChat.GetUser(currentItem->playerID).displayName;
                 }
             }
         }
@@ -387,7 +410,7 @@ public class APIV1 : ControllerBase
     [HttpPost("Worlds/{WorldID}/Groups/{PermissionGroup}")]
     public IActionResult EditPlayerPermissions(string WorldID, string PermissionGroup)
     {
-        string? Token = Request.Cookies["AuthToken"];
+        string? Token = Request.Cookies["AuthToken"] ?? Request.Headers.Authorization;
         string groupname = PermissionGroup.Trim().ToUpper();
 
         if (string.IsNullOrWhiteSpace(Token))
@@ -404,25 +427,30 @@ public class APIV1 : ControllerBase
         if (!User.IsMapAdmin(World))
             return Unauthorized("Unauthorized");
 
-        if (!World.PermissionsData.ContainsKey(groupname))
+        if (!World.permissionsData.ContainsKey(groupname))
             return NotFound("Group Not Found");
 
-        var Group = World.PermissionsData[groupname];
+        var Group = World.permissionsData[groupname];
         string PlayerID = Request.Form["PlayerID"].ToString().ToLower().Trim();
+        string Message = Request.Form["Message"].ToString().Trim().ToUpper();
+        PlayerItem Player = new PlayerItem();
+        Player.playerID = PlayerID;
+        Player.userAdded = User.login;
+        Player.message = Message;
+        VRCUser VRCuser = VRChat.GetUser(Player.playerID);
+        if (VRCuser == null || VRCuser.displayName == "[NOTLOADED]")
+            return BadRequest("Bad UserID");
+
         switch (Request.Form["FormType"].ToString().ToUpper().Trim())
         {
             case "ADD":
-                PlayerItem Player = new PlayerItem();
-                Player.PlayerID = PlayerID;
-                Player.AddedBy = User.login;
 
                 if (!Group.TryAdd(PlayerID, Player))
                     return StatusCode(501, "Failed");
                 else
                 {
-                    //TODO MAKE UPDATE THREAD INSTEAD OF USING World.PermissionsUpdated
-                    World.PermissionsUpdated = true;
-                    World.PermissionsData[groupname] = Group;
+                    World.Commits.Add($"{User.login}, Added The User: {VRCuser.displayName} To The Group: {groupname}");
+                    World.permissionsData[groupname] = Group;
                     Server.Database.Worlds[WorldID] = World;
                     return Ok("Success");
                 }
@@ -431,9 +459,8 @@ public class APIV1 : ControllerBase
                     return StatusCode(501, "Failed");
                 else
                 {
-                    //TODO MAKE UPDATE THREAD INSTEAD OF USING World.PermissionsUpdated
-                    World.PermissionsUpdated = true;
-                    World.PermissionsData[groupname] = Group;
+                    World.Commits.Add($"{User.login}, Removed The User: {VRCuser.displayName} To The Group: {groupname}");
+                    World.permissionsData[groupname] = Group;
                     Server.Database.Worlds[WorldID] = World;
                     return Ok("Success");
                 }
@@ -447,7 +474,7 @@ public class APIV1 : ControllerBase
     [HttpGet("Worlds/{WorldID}/Groups")]
     public IActionResult GetPlayerGroups(string WorldID)
     {
-        string? Token = Request.Cookies["AuthToken"];
+        string? Token = Request.Cookies["AuthToken"] ?? Request.Headers.Authorization;
 
         if (string.IsNullOrWhiteSpace(Token))
             return Unauthorized("Unauthorized");
@@ -463,13 +490,13 @@ public class APIV1 : ControllerBase
         if (!User.IsMapAdmin(World))
             return Unauthorized("Unauthorized");
 
-        return Ok(World.PermissionsData.Keys.ToArray());
+        return Ok(World.groupPermissions);
     }
 
     [HttpPost("Worlds/{WorldID}/Groups")]
     public IActionResult EditPlayerGroups(string WorldID)
     {
-        string? Token = Request.Cookies["AuthToken"];
+        string? Token = Request.Cookies["AuthToken"] ?? Request.Headers.Authorization;
 
         if (string.IsNullOrWhiteSpace(Token))
             return Unauthorized("Unauthorized");
@@ -486,30 +513,35 @@ public class APIV1 : ControllerBase
             return Unauthorized("Unauthorized");
 
         string GroupName = Request.Form["GroupName"].ToString().Trim().ToUpper();
-        string Permissions = Request.Form["Permissions"].ToString().Trim();
+        string[] Permissions = Request.Form["Permissions"].ToString().Trim().Split("+");
         switch (Request.Form["FormType"].ToString().ToUpper().Trim())
         {
             case "ADD":
-                PlayerItem Player = new PlayerItem();
-                Player.PlayerID = GroupName;
-                Player.AddedBy = User.login;
 
-                if (!World.PermissionsData.TryAdd(GroupName, new System.Collections.Concurrent.ConcurrentDictionary<string, PlayerItem>()) || !World.GroupPermissions.TryAdd(GroupName, Permissions))
+                if (World.permissionsData.TryGetValue(GroupName, out _))
+                {
+                    ThreadList<string> NewPermissions = World.groupPermissions.GetOrAdd(GroupName, Permissions);
+                    foreach (string Permission in Permissions)
+                        NewPermissions.Add(Permission);
+
+                    World.Commits.Add($"{User.login}, Added The Group: {GroupName}");
+                    Server.Database.Worlds[WorldID] = World;
+                    return Ok("Success");
+                }
+                if (!World.permissionsData.TryAdd(GroupName, new ConcurrentDictionary<string, PlayerItem>()) || !World.groupPermissions.TryAdd(GroupName, Permissions))
                     return StatusCode(501, "Failed");
                 else
                 {
-                    //TODO MAKE UPDATE THREAD INSTEAD OF USING World.PermissionsUpdated
-                    World.PermissionsUpdated = true;
+                    World.Commits.Add($"{User.login}, Added The Group: {GroupName}");
                     Server.Database.Worlds[WorldID] = World;
                     return Ok("Success");
                 }
             case "REMOVE" or "DELETE":
-                if (!World.PermissionsData.TryRemove(GroupName, out _) || !World.GroupPermissions.TryRemove(GroupName, out _))
+                if (!World.permissionsData.TryRemove(GroupName, out _) || !World.groupPermissions.TryRemove(GroupName, out _))
                     return StatusCode(501, "Failed");
                 else
                 {
-                    //TODO MAKE UPDATE THREAD INSTEAD OF USING World.PermissionsUpdated
-                    World.PermissionsUpdated = true;
+                    World.Commits.Add($"{User.login}, Removed The Group: {GroupName}");
                     Server.Database.Worlds[WorldID] = World;
                     return Ok("Success");
                 }
@@ -524,7 +556,7 @@ public class APIV1 : ControllerBase
     [HttpPost("Worlds/{WorldID}/SiteAdmins")]
     public IActionResult SiteAdmins(string WorldID)
     {
-        string? Token = Request.Cookies["AuthToken"];
+        string? Token = Request.Cookies["AuthToken"] ?? Request.Headers.Authorization;
 
         if (string.IsNullOrWhiteSpace(Token))
             return Unauthorized("Unauthorized");
@@ -541,19 +573,19 @@ public class APIV1 : ControllerBase
             return Unauthorized("Unauthorized");
 
         if (!Request.HasFormContentType)
-            return Ok(World.SiteAdmins);
+            return Ok(World.siteAdmins);
         switch (Request.Form["FormType"].ToString().ToUpper().Trim())
         {
             case "ADD":
                 if (!User.IsMapMaster(WorldID))
                     return Unauthorized("Unauthorized");
-                World.SiteAdmins.Add(Request.Form["User"].ToString());
+                World.siteAdmins.Add(Request.Form["User"].ToString());
                 Server.Database.Worlds[WorldID] = World;
                 break;
             case "REMOVE" or "DELETE":
                 if (!User.IsMapMaster(WorldID))
                     return Unauthorized("Unauthorized");
-                World.SiteAdmins.Remove(Request.Form["User"].ToString());
+                World.siteAdmins.Remove(Request.Form["User"].ToString());
                 Server.Database.Worlds[WorldID] = World;
                 break;
             default:
@@ -561,6 +593,56 @@ public class APIV1 : ControllerBase
         }
         return Ok();
     }
+
+    [HttpGet("Worlds/{WorldID}/GetCommits")]
+    public IActionResult GetCommits(string WorldID)
+    {
+        string? Token = Request.Cookies["AuthToken"] ?? Request.Headers.Authorization;
+
+        if (string.IsNullOrWhiteSpace(Token))
+            return Unauthorized("Unauthorized");
+        GithubUser? User = GithubAuth.GetUser(Token);
+        if (User == null)
+            return Unauthorized("Unauthorized");
+
+        VRCW? World;
+        Server.Database.Worlds.TryGetValue(WorldID, out World);
+        if (World == null)
+            return NotFound("World Not Found");
+
+        if (!User.IsMapAdmin(World))
+            return Unauthorized("Unauthorized");
+        return Ok(World.Commits);
+    }
+
+    [HttpPost("Worlds/{WorldID}/PushCommits")]
+    public async Task<IActionResult> PublishContent(string WorldID)
+    {
+        string? Token = Request.Cookies["AuthToken"] ?? Request.Headers.Authorization;
+
+        if (string.IsNullOrWhiteSpace(Token))
+            return Unauthorized("Unauthorized");
+        GithubUser? User = GithubAuth.GetUser(Token);
+        if (User == null)
+            return Unauthorized("Unauthorized");
+
+        VRCW? World;
+        Server.Database.Worlds.TryGetValue(WorldID, out World);
+        if (World == null)
+            return NotFound("World Not Found");
+
+        if (!User.IsMapAdmin(World))
+            return Unauthorized("Unauthorized");
+        GithubRepoControl Repo = new GithubRepoControl(World.githubRepo, World.github_OAuth);
+        if (await Repo.UpdateFileContentAsync("ServerPermissions.PSC", World.ConvertPSC(), $"{User.login}, Pushed Commits:\n{string.Join('\n', World.Commits)}"))
+        {
+            World.Commits.Clear();
+            return Ok("Successfully Pushed Commits");
+        }
+        else
+            return StatusCode(500);
+    }
+
     #endregion
 
     #region VRChat
@@ -568,7 +650,7 @@ public class APIV1 : ControllerBase
     [HttpGet("VRChat/Users/{UserID}")]
     public IActionResult GetVRChatUser(string UserID)
     {
-        string? Token = Request.Cookies["AuthToken"];
+        string? Token = Request.Cookies["AuthToken"] ?? Request.Headers.Authorization;
 
         if (string.IsNullOrWhiteSpace(Token))
             return Unauthorized("Unauthorized");
@@ -577,15 +659,15 @@ public class APIV1 : ControllerBase
             return Unauthorized("Unauthorized");
         if (!User.IsSiteOwner())
             return Unauthorized("Unauthorized");
-        VRChatUser VRCUser = VRChat.GetUser(UserID);
-        return Ok(VRCUser);
+        VRCUser vrcuser = VRChat.GetUser(UserID);
+        return Ok(vrcuser);
     }
 
     [HttpGet("Users/{UserID}/Validate")]
     [HttpGet("VRChat/Users/{UserID}/Validate")]
     public IActionResult ValidateVRChatUser(string UserID)
     {
-        string? Token = Request.Cookies["AuthToken"];
+        string? Token = Request.Cookies["AuthToken"] ?? Request.Headers.Authorization;
 
         if (string.IsNullOrWhiteSpace(Token))
             return Unauthorized("Unauthorized");
