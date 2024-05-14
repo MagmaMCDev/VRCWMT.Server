@@ -20,6 +20,14 @@ public class APIV1 : ControllerBase
     public static string RedirectScript(string URL) => $@"<script>window.location.href='{URL}';</script>";
     public static string GithubOAuthURL => $"https://github.com/login/oauth/authorize?client_id={env.ClientID}&scope=repo,read:user&redirect_uri={APIRoute}/Github/OAuth/";
 
+    [HttpGet("Status")]
+    [HttpPost("Status")]
+    [HttpPut("Status")]
+    [HttpHead("Status")]
+    [HttpOptions("Status")]
+    public IActionResult Status() => Ok("Alive");
+
+
     #region Github
 
     [HttpGet("Logout")]
@@ -93,7 +101,7 @@ public class APIV1 : ControllerBase
             if (string.IsNullOrWhiteSpace(Token))
                 return Unauthorized("Unauthorized");
             GithubUser? User = GithubAuth.GetUser(Token);
-            Console.WriteLine(Token);
+
             if (User == null)
                 return Unauthorized("Unauthorized");
 
@@ -146,14 +154,12 @@ public class APIV1 : ControllerBase
                 worldCreator = User.login
             };
             Server.Database.Worlds.TryAdd(ID, World);
+            return Ok(ID);
         }
         catch
         {
             return Problem();
         }
-        string redirectScript = @"<script>window.location.href='https://vrc.magmamc.dev/';</script>";
-
-        return Content(redirectScript, "text/html");
     }
 
     [HttpGet("Worlds/{ID}/Image")]
@@ -228,6 +234,54 @@ public class APIV1 : ControllerBase
             return NotFound("Not Found");
         }
     }
+    [HttpPost("worlds/{WorldID}/Name")]
+    public IActionResult EditWorldName(string WorldID)
+    {
+        string? Token = Request.Cookies["AuthToken"] ?? Request.Headers.Authorization;
+
+        if (string.IsNullOrWhiteSpace(Token))
+            return Unauthorized("Unauthorized");
+        GithubUser? User = GithubAuth.GetUser(Token);
+        if (User == null)
+            return Unauthorized("Unauthorized");
+
+        VRCW? World;
+        Server.Database.Worlds.TryGetValue(WorldID, out World);
+        if (World == null)
+            return NotFound("World Not Found");
+
+        if (!User.IsMapMaster(World))
+            return Unauthorized("Unauthorized");
+
+        World.worldName = Request.Form["Value"].ToString();
+        Server.Database.Worlds[WorldID] = World;
+        return Ok(WorldID);
+    }
+
+    [HttpPost("worlds/{WorldID}/Description")]
+    public IActionResult EditWorldDescription(string WorldID)
+    {
+        string? Token = Request.Cookies["AuthToken"] ?? Request.Headers.Authorization;
+
+        if (string.IsNullOrWhiteSpace(Token))
+            return Unauthorized("Unauthorized");
+        GithubUser? User = GithubAuth.GetUser(Token);
+        if (User == null)
+            return Unauthorized("Unauthorized");
+
+        VRCW? World;
+        Server.Database.Worlds.TryGetValue(WorldID, out World);
+        if (World == null)
+            return NotFound("World Not Found");
+
+        if (!User.IsMapMaster(World))
+            return Unauthorized("Unauthorized");
+
+        World.worldDescription = Request.Form["Value"].ToString();
+        Server.Database.Worlds[WorldID] = World;
+        return Ok(WorldID);
+    }
+
     #endregion
 
     #region Posts
@@ -579,6 +633,8 @@ public class APIV1 : ControllerBase
             case "ADD":
                 if (!User.IsMapMaster(WorldID))
                     return Unauthorized("Unauthorized");
+                if (World.worldCreator.ToLower() == Request.Form["User"].ToString().ToLower())
+                    return BadRequest("Already Admin");
                 World.siteAdmins.Add(Request.Form["User"].ToString());
                 Server.Database.Worlds[WorldID] = World;
                 break;

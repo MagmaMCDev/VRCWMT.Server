@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using MagmaMC.PSC;
 using OpenVRChatAPI;
+using OpenVRChatAPI.Models;
 
 namespace VRCWMT.Models;
 public class VRCW
@@ -44,7 +45,11 @@ public class VRCW
             sb.AppendLine($">> {groupPermission.Key} > {string.Join("+", groupPermission.Value)}");
             if (permissionsData.ContainsKey(groupPermission.Key))
                 foreach (var playerItem in permissionsData[groupPermission.Key])
-                    sb.AppendLine(VRChat.GetUser(playerItem.Key).displayName);
+                {
+                    VRCUser user = VRChat.GetUser(playerItem.Key);
+                    if (user.displayName != "[NOTLOADED]")
+                        sb.AppendLine(user.displayName);
+                }
             sb.AppendLine();
         }
 

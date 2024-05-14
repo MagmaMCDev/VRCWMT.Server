@@ -12,7 +12,7 @@
   </PropertyGroup>
   
   <PropertyGroup>
-    <FileVersion>0.2.0</FileVersion>
+    <FileVersion>1.1.0</FileVersion>
     <AssemblyVersion>$(FileVersion).0</AssemblyVersion>
     <Version>$(FileVersion)</Version>
     <AssemblyName>VRCWMT</AssemblyName>
