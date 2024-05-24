@@ -9,6 +9,7 @@ using Spectre.Console;
 using ServerBackend;
 using OpenVRChatAPI;
 using OpenVRChatAPI.Models;
+using VRCWMT.Services;
 
 namespace VRCWMT;
 public class Server
@@ -19,7 +20,7 @@ public class Server
     private static Thread DBThread;
     private static Thread AuthThread;
 #pragma warning restore CS8618
-    private static readonly Logger Debugger = new(LoggingLevel.Debug);
+    public static readonly Logger Debugger = new(LoggingLevel.Debug);
     public static Database Database = new();
     public static ServerConfig CFG = new();
     public static string User_Agent = "VRChat-World-Moderation-Tool.Server - " + Environment.OSVersion.Platform + $" - {Environment.OSVersion.VersionString.Replace(" ", "-")}";
@@ -27,6 +28,9 @@ public class Server
     public static void Main(string[] args)
     {
         Console.OutputEncoding = Encoding.UTF8;
+        ConsoleLogger CL = new ConsoleLogger(Console.Out);
+        Console.SetOut(CL);
+        CommandsController._logger = CL;
         Commands.SetupConfig();
 
         if (!VRChat.LoggedIn)
@@ -387,7 +391,7 @@ public class Server
         {
             CFG.IP = CFG.GetValue("IP", "VRCWMT", "0.0.0.0");
             CFG.PORT = CFG.GetValue("PORT", "VRCWMT", "5151");
-            CFG.SiteOwner = CFG.GetValue("SiteOwner", "VRCWMT", "MagmaMC");
+            CFG.SiteOwner = CFG.GetValue("SiteOwner", "VRCWMT", "MagmaMCNet");
             CFG.VRC_auth = CFG.GetValue("VRCHAT_auth", "VRCWMT", "");
             CFG.VRC_twoFactorAuth = CFG.GetValue("VRCHAT_twoFactorAuth", "VRCWMT", "");
             VRChat.Username = Encoding.UTF8.GetString(Convert.FromBase64String(CFG.GetValue("VRCHAT_name", "VRCWMT", "")));

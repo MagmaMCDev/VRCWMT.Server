@@ -13,11 +13,11 @@ using System.Text.Json;
 using System.Threading;
 
 namespace VRCWMT;
-[Route("api/v1/")]
+[Route("api/v2/")]
 [ApiController]
-public class APIV1 : ControllerBase
+public class APIV2 : ControllerBase
 {
-    public const string APIRoute = "https://vrc.magmamc.dev/API/V1";
+    public const string APIRoute = "https://vrc.magmamc.dev/API/V2";
     public const string RedirectBase = @"<script>window.location.href='https://vrc.magmamc.dev/';</script>";
     public static string RedirectScript(string URL) => $@"<script>window.location.href='{URL}';</script>";
     public static string GithubOAuthURL => $"https://github.com/login/oauth/authorize?client_id={env.ClientID}&scope=repo,read:user&redirect_uri={APIRoute}/Github/OAuth/";
@@ -29,6 +29,7 @@ public class APIV1 : ControllerBase
     [HttpOptions("Status")]
     public IActionResult Status() => Ok("Alive");
 
+    #region Github
     [HttpGet("Version")]
     [HttpGet("Version/latest")]
     public async Task<IActionResult> Version()
@@ -79,7 +80,6 @@ public class APIV1 : ControllerBase
         return Ok(ClientV);
     }
 
-    #region Github
 
     [HttpGet("Logout")]
     [HttpPost("Logout")]
@@ -277,6 +277,7 @@ public class APIV1 : ControllerBase
             User.siteOwner = User.username.ToLower() == Server.Database.SiteOwner.ToLower();
             User.worldCreator = User.username.ToLower() == World.worldCreator.ToLower();
             User.siteAdmin = World.siteAdmins.Select(u => u.ToLower()).Contains(Username.ToLower());
+            User.read = World.siteMods.Select(u => u.ToLower()).Contains(Username.ToLower());
             return Ok(User);
 
         }
@@ -489,7 +490,7 @@ public class APIV1 : ControllerBase
         if (World == null)
             return NotFound("World Not Found");
 
-        if (!User.IsMapAdmin(World))
+        if (!User.IsMapMod(World))
             return Unauthorized("Unauthorized");
 
         if (!World.permissionsData.ContainsKey(groupname))
@@ -536,7 +537,7 @@ public class APIV1 : ControllerBase
 
         var Group = World.permissionsData[groupname];
         string PlayerID = Request.Form["PlayerID"].ToString().ToLower().Trim();
-        string Message = Request.Form["Message"].ToString().Trim().ToUpper();
+        string Message = Request.Form["Message"].ToString().Trim();
         PlayerItem Player = new PlayerItem();
         Player.playerID = PlayerID;
         Player.userAdded = User.login;
@@ -591,7 +592,7 @@ public class APIV1 : ControllerBase
         if (World == null)
             return NotFound("World Not Found");
 
-        if (!User.IsMapAdmin(World))
+        if (!User.IsMapMod(World))
             return Unauthorized("Unauthorized");
 
         return Ok(World.groupPermissions);
@@ -613,7 +614,7 @@ public class APIV1 : ControllerBase
         if (World == null)
             return NotFound("World Not Found");
 
-        if (!User.IsMapAdmin(World))
+        if (!User.IsMapMod(World))
             return Unauthorized("Unauthorized");
 
         string GroupName = Request.Form["GroupName"].ToString().Trim().ToUpper();
@@ -656,9 +657,9 @@ public class APIV1 : ControllerBase
 
     }
 
-    [HttpGet("Worlds/{WorldID}/SiteAdmins")]
-    [HttpPost("Worlds/{WorldID}/SiteAdmins")]
-    public IActionResult SiteAdmins(string WorldID)
+    [HttpGet("Worlds/{WorldID}/Access/Write")]
+    [HttpPost("Worlds/{WorldID}/Access/Write")]
+    public IActionResult WriteAccess(string WorldID)
     {
         string? Token = Request.Cookies["AuthToken"] ?? Request.Headers.Authorization;
 
@@ -684,7 +685,7 @@ public class APIV1 : ControllerBase
                 if (!User.IsMapMaster(WorldID))
                     return Unauthorized("Unauthorized");
                 if (World.worldCreator.ToLower() == Request.Form["User"].ToString().ToLower())
-                    return BadRequest("Already Admin");
+                    return BadRequest("Already has read/write access");
                 World.siteAdmins.Add(Request.Form["User"].ToString());
                 Server.Database.Worlds[WorldID] = World;
                 break;
@@ -692,6 +693,50 @@ public class APIV1 : ControllerBase
                 if (!User.IsMapMaster(WorldID))
                     return Unauthorized("Unauthorized");
                 World.siteAdmins.Remove(Request.Form["User"].ToString());
+                Server.Database.Worlds[WorldID] = World;
+                break;
+            default:
+                return BadRequest("Bad FormType");
+        }
+        return Ok();
+    }
+
+    [HttpGet("Worlds/{WorldID}/Access/Read")]
+    [HttpPost("Worlds/{WorldID}/Access/Read")]
+    public IActionResult ReadAccess(string WorldID)
+    {
+        string? Token = Request.Cookies["AuthToken"] ?? Request.Headers.Authorization;
+
+        if (string.IsNullOrWhiteSpace(Token))
+            return Unauthorized("Unauthorized");
+        GithubUser? User = GithubAuth.GetUser(Token);
+        if (User == null)
+            return Unauthorized("Unauthorized");
+
+        VRCW? World;
+        Server.Database.Worlds.TryGetValue(WorldID, out World);
+        if (World == null)
+            return NotFound("World Not Found");
+
+        if (!User.IsMapAdmin(World))
+            return Unauthorized("Unauthorized");
+
+        if (!Request.HasFormContentType)
+            return Ok(World.siteMods);
+        switch (Request.Form["FormType"].ToString().ToUpper().Trim())
+        {
+            case "ADD":
+                if (!User.IsMapAdmin(WorldID))
+                    return Unauthorized("Unauthorized");
+                if (World.worldCreator.ToLower() == Request.Form["User"].ToString().ToLower())
+                    return BadRequest("Already has read access");
+                World.siteMods.Add(Request.Form["User"].ToString());
+                Server.Database.Worlds[WorldID] = World;
+                break;
+            case "REMOVE" or "DELETE":
+                if (!User.IsMapAdmin(WorldID))
+                    return Unauthorized("Unauthorized");
+                World.siteMods.Remove(Request.Form["User"].ToString());
                 Server.Database.Worlds[WorldID] = World;
                 break;
             default:
@@ -716,7 +761,7 @@ public class APIV1 : ControllerBase
         if (World == null)
             return NotFound("World Not Found");
 
-        if (!User.IsMapAdmin(World))
+        if (!User.IsMapMod(World))
             return Unauthorized("Unauthorized");
         return Ok(World.Commits);
     }
@@ -743,7 +788,7 @@ public class APIV1 : ControllerBase
             return Unauthorized("Unauthorized");
 
         DateTime lastPublishTime = World.LastPublishTime;
-        if ((DateTime.UtcNow - lastPublishTime).TotalSeconds < 60)
+        if ((DateTime.UtcNow - lastPublishTime).TotalSeconds < 30)
             return StatusCode(429, "Publishing too frequently");
 
         GithubRepoControl Repo = new GithubRepoControl(World.githubRepo, World.github_OAuth);

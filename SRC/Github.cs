@@ -119,6 +119,35 @@ public static class GithubAuthExtensions
             return false;
         return Server.Database.Worlds[ID].worldCreator.ToLower() == user.login.ToLower();
     }
+    public static bool IsMapMod(this GithubUser user, string WRD_ID)
+    {
+        if (user.IsSiteOwner())
+            return true;
+        string ID = WRD_ID.Trim().ToUpper();
+        if (!Server.Database.Worlds.ContainsKey(ID))
+            return false;
+
+        return user.IsMapMod(Server.Database.Worlds[ID]);
+    }
+    public static bool IsMapMod(this GithubUser user, VRCW World)
+    {
+        if (user.IsSiteOwner())
+            return true;
+
+        if (World.worldCreator.ToLower() == user.login.ToLower())
+            return true;
+        foreach (string Mod in World.siteMods)
+        {
+            if (Mod.ToLower() == user.login.ToLower())
+                return true;
+        }
+        foreach (string Admin in World.siteAdmins)
+        {
+            if (Admin.ToLower() == user.login.ToLower())
+                return true;
+        }
+        return false;
+    }
     public static bool IsMapAdmin(this GithubUser user, string WRD_ID)
     {
         if (user.IsSiteOwner())

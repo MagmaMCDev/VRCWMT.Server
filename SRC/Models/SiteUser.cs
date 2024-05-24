@@ -6,6 +6,7 @@ public class SiteUser
     public bool siteAdmin { get; set; } = false;
     public bool worldCreator { get; set; } = false;
     public bool siteOwner { get; set; } = false;
+    public bool read { get; set; } = false;
 
     public override string ToString() => username;
 }

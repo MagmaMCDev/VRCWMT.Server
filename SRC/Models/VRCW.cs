@@ -14,6 +14,8 @@ public class VRCW
     public string worldCreator { get; set; } = "";
 
     [JsonIgnore]
+    public DateTime LastPublishTime { get; set; } = DateTime.MinValue;
+    [JsonIgnore]
     public ConcurrentDictionary<string, ConcurrentDictionary<string, PlayerItem>> permissionsData { get; set; } = new();
     public ConcurrentDictionary<string, ThreadList<string>> groupPermissions { get; set; } = new();
 
@@ -23,6 +25,8 @@ public class VRCW
     public string github_OAuth { get; set; } = "";
     [JsonIgnore]
     public ThreadList<string> siteAdmins { get; set; } = new();
+    [JsonIgnore]
+    public ThreadList<string> siteMods { get; set; } = new();
     [JsonIgnore]
     public ThreadList<string> Commits { get; set; } = new();
     public ThreadList<Post> Posts { get; set; } = new();
@@ -44,16 +48,20 @@ public class VRCW
         {
             sb.AppendLine($">> {groupPermission.Key} > {string.Join("+", groupPermission.Value)}");
             if (permissionsData.ContainsKey(groupPermission.Key))
-                foreach (var playerItem in permissionsData[groupPermission.Key])
+            {
+                var sortedPlayers = permissionsData[groupPermission.Key].OrderBy(p => p.Value.timeAdded);
+                foreach (var playerItem in sortedPlayers)
                 {
-                    VRCUser user = VRChat.GetUser(playerItem.Key);
+                    VRCUser user = VRChat.GetUser(playerItem.Value.playerID);
                     if (user.displayName != "[NOTLOADED]")
-                        sb.AppendLine(user.displayName);
+                        sb.AppendLine($"{user.displayName}");
                 }
+            }
             sb.AppendLine();
         }
 
         return sb.ToString().TrimEnd();
     }
+
 
 }
