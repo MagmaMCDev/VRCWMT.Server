@@ -119,6 +119,13 @@ public class Server
         Thread.Sleep(500);
         Commands.Stats();
 
+        if (!Environment.UserInteractive)
+        {
+            Console.WriteLine("Non Interactive Mode!");
+            while (MainThread.IsAlive)
+                Thread.Sleep(1000);
+            return;
+        }
         while (MainThread.IsAlive)
         {
             AnsiConsole.Markup("[cyan]> [/]");
@@ -182,7 +189,7 @@ public class Server
                 case "CLEAR" or "CLS":
                     Commands.Stats();
                     break;
-                case "EXIT" or "QUIT":
+                case "EXIT" or "QUIT" or "SHUTDOWN":
                     Commands.Exit();
                     Environment.Exit(0);
                     return;
@@ -271,7 +278,7 @@ public class Server
 
             AnsiConsole.Markup($@"[orangered1]> [/][lime]RESTART[/]");
             AnsiConsole.MarkupLine($@"[orangered1] - [/]" + $@"Restarts The Server's Components");
-            AnsiConsole.Markup($@"[orangered1]> [/][lime]EXIT[/]");
+            AnsiConsole.Markup($@"[orangered1]> [/][lime]SHUTDOWN[/]");
             AnsiConsole.MarkupLine($@"[orangered1] - [/]" + $@"Saves The Database And Exits");
         }
 

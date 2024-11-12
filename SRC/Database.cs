@@ -12,7 +12,7 @@ public class Database: IDisposable
 {
     public const string FileName = "VRCW-Worlds.db";
     public const string SecurityKey = "VRCWMT";
-    public static string NewID => "WRD_"+Nanoid.Generate("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", 32);
+    public static string NewID => "WRD_"+Nanoid.Generate("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", 16);
     public string SiteOwner => Server.CFG.SiteOwner;
     public ConcurrentDictionary<string, VRCW> Worlds { get; set; } = [];
 

@@ -13,7 +13,7 @@ public class ServerConfig: SimpleConfig
     public string VRC_auth = "";
     public string VRC_twoFactorAuth = "";
 
-    public const string VERSION = "1.2.0";
+    public const string VERSION = "1.3.0";
 
     public ServerConfig(): base(Filename)
     {
