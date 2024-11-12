@@ -4,9 +4,10 @@
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
 # User-specific files
-username
-password
-twoauthcode
+/Config.MSC
+/twoauthcode
+/username
+/password
 *.rsuser
 *.suo
 *.user
@@ -370,6 +371,3 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
-/Config.MSC
-/twoauthcode
-/username
